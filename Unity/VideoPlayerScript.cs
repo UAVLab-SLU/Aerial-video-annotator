@@ -36,19 +36,19 @@ public class VideoPlayerScript : MonoBehaviour
             if (client.Available > 0)
             {
                 IPEndPoint endPoint = new IPEndPoint(IPAddress.Any, 0);
-                byte[] data = client.Receive(ref endPoint);
-                // do something with the received data
-                string text = Encoding.UTF8.GetString(data);
-                print("iii");
-                print(text);
+byte[] data = client.Receive(ref endPoint);
+// do something with the received data
+string text = Encoding.UTF8.GetString(data);
+print("iii");
+print(text);
 
-                Texture2D texture = new Texture2D(360, 360, TextureFormat.RGB24, false);
-                //Texture2D texture = new Texture2D(2, 2);
-                texture.LoadImage(data);
-                RenderTexture renderTexture = new RenderTexture(texture.width, texture.height, 0);
-                Graphics.Blit(texture, renderTexture);
-                // Add the render texture to the video player
-                this.videoPlayer.targetTexture = renderTexture;
+Texture2D texture = new Texture2D(360, 360, TextureFormat.RGB24, false);
+//Texture2D texture = new Texture2D(2, 2);
+texture.LoadImage(data);
+RenderTexture renderTexture = new RenderTexture(texture.width, texture.height, 0);
+Graphics.Blit(texture, renderTexture);
+// Add the render texture to the video player
+this.videoPlayer.targetTexture = renderTexture;
                 //this.videoPlayer.Play();
 
                 //  
