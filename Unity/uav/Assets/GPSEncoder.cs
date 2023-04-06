@@ -133,17 +133,31 @@ public sealed class GPSEncoder {
 		return GetInstance().QuaternionToRotationVector(rotation);
 	}
 
-	public Vector3 QuaternionToRotationVector(Quaternion rotation)
+	// public Vector3 QuaternionToRotationVector(Quaternion rotation)
+    // {
+    //     // Convert the quaternion to a rotation matrix
+    //     Matrix4x4 matrix = Matrix4x4.Rotate(rotation);
+
+    //     // Extract the rotation angles from the matrix
+    //     float xAngle = Mathf.Atan2(matrix.m23, matrix.m33) * Mathf.Rad2Deg;
+    //     float yAngle = Mathf.Atan2(-matrix.m13, Mathf.Sqrt(matrix.m23 * matrix.m23 + matrix.m33 * matrix.m33)) * Mathf.Rad2Deg;
+    //     float zAngle = Mathf.Atan2(matrix.m12, matrix.m11) * Mathf.Rad2Deg;
+
+    //     // Return the rotation vector as a Vector3
+    //     return new Vector3(xAngle, yAngle, zAngle);
+    // }
+
+	public  Vector3 QuaternionToRotationVector(Quaternion quaternion)
     {
-        // Convert the quaternion to a rotation matrix
-        Matrix4x4 matrix = Matrix4x4.Rotate(rotation);
+        float w = quaternion.w;
+        float x = quaternion.x;
+        float y = quaternion.y;
+        float z = quaternion.z;
 
-        // Extract the rotation angles from the matrix
-        float xAngle = Mathf.Atan2(matrix.m23, matrix.m33) * Mathf.Rad2Deg;
-        float yAngle = Mathf.Atan2(-matrix.m13, Mathf.Sqrt(matrix.m23 * matrix.m23 + matrix.m33 * matrix.m33)) * Mathf.Rad2Deg;
-        float zAngle = Mathf.Atan2(matrix.m12, matrix.m11) * Mathf.Rad2Deg;
+        float roll = Mathf.Atan2(2 * (w * x + y * z), 1 - 2 * (x * x + y * y)) * Mathf.Rad2Deg;
+        float pitch = Mathf.Asin(2 * (w * y - z * x)) * Mathf.Rad2Deg;
+        float yaw = Mathf.Atan2(2 * (w * z + x * y), 1 - 2 * (y * y + z * z)) * Mathf.Rad2Deg;
 
-        // Return the rotation vector as a Vector3
-        return new Vector3(xAngle, yAngle, zAngle);
+        return new Vector3(roll, pitch, yaw);
     }
 }

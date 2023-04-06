@@ -78,14 +78,27 @@ public class VideoRend : MonoBehaviour
             world_pos.y =alt;
             
             Debug.Log(world_pos);
-       
-            canv.planeDistance = alt+1;
+
+            
             var quat = new Quaternion(x,y,z,w);
-            // drone.transform.rotation = quat;
+            
             // Debug.Log(quat.eulerAngles);
-            // var ang = GPSEncoder.QuatToEuler(quat);
-            // Debug.Log(ang);
-            drone.transform.position = world_pos;
+            var ang = GPSEncoder.QuatToEuler(quat);
+            var adj_ang = new Vector3();
+            adj_ang.x = -1.0f*ang.y;
+            Debug.Log(adj_ang.x);
+            adj_ang.z = ang.x;
+            adj_ang.y = ang.z;
+            float tempv = (float)Math.PI/180;
+            float c = (90.0f-adj_ang.x) * tempv;
+            float tempang = (float)Math.Cos(c);
+            float ht = alt/tempang;
+            canv.planeDistance = ht+1;
+            Debug.Log(ht);
+
+            drone.transform.rotation = Quaternion.Euler(adj_ang);
+            Debug.Log(ang);
+            drone.transform.position = world_pos; 
 
 
         }
