@@ -5,44 +5,78 @@ using System.Text;
 using System.Net;
 using System.Net.Sockets;
 using System.Collections.Generic;
+using UnityEngine.EventSystems;
 using System;
 using System.Linq;
 using Newtonsoft.Json;
 
-public class VideoRend : MonoBehaviour
+public class VideoRend : MonoBehaviour//,IPointerEnterHandler
 {
     // Start is called before the first frame update
     public Canvas canv;
     public RawImage image;
     public GameObject drone;
-    public GameObject cube;
+    public GameObject obj1;
+    public GameObject obj2;
+    public GameObject obj3;
     UdpClient client;
     UdpClient client2;
     IPEndPoint endPoint;
     public GPSEncoder GE;
-    float interval = 0.2f;
-    float nextTime = 0;
     private int count;
 
-    public float lat = 0.0f;
-    public float lon = 0.0f;
-    public float alt = 0.0f;
-    public float lat2 = 0.0f;
-    public float lon2 = 0.0f;
-    public float alt2 = 0.0f;
-    public float w = 0.0f;
-    public float x = 0.0f;
-    public float y = 0.0f;
-    public float z = 0.0f;
-    
+    float lat = 0.0f;
+    float lon = 0.0f;
+    float alt = 0.0f;
+    float lat2 = 0.0f;
+    float lon2 = 0.0f;
+    float alt2 = 0.0f;
+    float w = 0.0f;
+    float x = 0.0f;
+    float y = 0.0f;
+    float z = 0.0f;
 
+    private Vector3 adj_ang;
+    string selectedButton;
+    
+    public Button green;
+    public Button blue;
+    public Button red;
+
+
+
+    // GameObject currentHover;
+
+    // public void OnPointerEnter(PointerEventData eventData) {
+    //     if (eventData.pointerCurrentRaycast.gameObject != null) {
+    //         Debug.Log("Mouse Over: " + eventData.pointerCurrentRaycast.gameObject.name);
+    //         currentHover = eventData.pointerCurrentRaycast.gameObject;
+    //     }
+    // }
+
+    // public void OnPointerExit(PointerEventData eventData) {
+    //     currentHover = null;
+    // }
 
     void Start()
     {
         client = new UdpClient(8080);
         client2 = new UdpClient(8000);
         endPoint = new IPEndPoint(IPAddress.Any, 0);
+        green.onClick.AddListener(GreenButton);
+        blue.onClick.AddListener(BlueButton);
+        red.onClick.AddListener(RedButton);
         
+        selectedButton = "green";
+
+        // RectTransform rectTransform = green.GetComponent<RectTransform>();
+
+        // // Convert the Button's position to screen space
+        // Vector2 screenPosition;
+        // RectTransformUtility.ScreenPointToLocalPointInRectangle(canv.transform as RectTransform, rectTransform.position, canv.worldCamera, out screenPosition);
+
+        // // Print the Button's position with respect to the Canvas
+        // Debug.Log(screenPosition);
     }
 
 
@@ -51,6 +85,11 @@ public class VideoRend : MonoBehaviour
     void Update()
     {
 
+
+        // if (currentHover){
+        //      Debug.Log(currentHover.name + " @ " + Input.mousePosition);
+        // }
+           
 
         if (client.Available > 0)
         {
@@ -77,16 +116,16 @@ public class VideoRend : MonoBehaviour
             var world_pos = GPSEncoder.GPSToUCS(lat,lon);
             world_pos.y =alt;
             
-            Debug.Log(world_pos);
+            // Debug.Log(world_pos);
 
             
             var quat = new Quaternion(x,y,z,w);
             
             // Debug.Log(quat.eulerAngles);
             var ang = GPSEncoder.QuatToEuler(quat);
-            var adj_ang = new Vector3();
+            adj_ang = new Vector3();
             adj_ang.x = -1.0f*ang.y;
-            Debug.Log(adj_ang.x);
+            // Debug.Log(adj_ang.x);
             adj_ang.z = ang.x;
             adj_ang.y = ang.z;
             float tempv = (float)Math.PI/180;
@@ -94,9 +133,8 @@ public class VideoRend : MonoBehaviour
             float tempang = (float)Math.Cos(c);
             float ht = alt/tempang;
             canv.planeDistance = ht+1;
-            Debug.Log(ht);
-
-            drone.transform.rotation = Quaternion.Euler(adj_ang);
+            Quaternion rotat = Quaternion.Euler(adj_ang);
+            drone.transform.rotation = rotat;
             Debug.Log(ang);
             drone.transform.position = world_pos; 
 
@@ -109,18 +147,22 @@ public class VideoRend : MonoBehaviour
 
             byte[] data2 = client2.Receive(ref endPoint);
             string text2 = Encoding.UTF8.GetString(data2);
-            Debug.Log(text2);
+            // Debug.Log(text2);
             var values2 = JsonConvert.DeserializeObject<Dictionary<string, string>>(text2);
             lat2 = (float) Convert.ToDouble(values2["lat"]);
             lon2 = (float) Convert.ToDouble(values2["lon"]);
             alt2 =  (float) Convert.ToDouble(values2["alt"]);
             var world_pos2 = GPSEncoder.GPSToUCS(lat2,lon2);
             world_pos2.y =1.0f;
-            Instantiate(cube,world_pos2, Quaternion.identity);
+            InstObj(world_pos2);
 
         }
 
-        if (Input.GetButtonDown("Fire1"))
+        // if(!EventSystem.current.IsPointerOverGameObject()){
+        //     Debug.Log("True");
+        // }
+
+        if (Input.GetMouseButtonDown(0))
         {
            Dictionary<string, string> payload = new Dictionary<string, string>();
            Vector3 mousePos = Input.mousePosition;
@@ -142,8 +184,52 @@ public class VideoRend : MonoBehaviour
            client.Send(data, data.Length, endPoint);
         }
 
-      
-
-
     }
+
+    private void GreenButton()
+    {
+        Debug.Log("You have clicked Green Button!");
+        selectedButton="green";
+        resetButtons();
+        green.interactable=false;
+        
+        
+    }
+
+     private void RedButton()
+    {
+        Debug.Log("You have clicked Red Button!");
+        selectedButton="red";
+        resetButtons();
+        red.interactable=false;
+        
+        
+    }
+
+    private void BlueButton()
+    {
+        Debug.Log("You have clicked Blue Button!");
+        selectedButton="blue";
+        resetButtons();
+        blue.interactable=false;
+    }
+    private void InstObj(Vector3 wp){
+        if(selectedButton == "green"){
+            Instantiate(obj1,wp, Quaternion.Euler(adj_ang));
+        }
+        else if(selectedButton == "red")
+        {
+            Instantiate(obj2,wp, Quaternion.Euler(adj_ang));
+        }
+        else if(selectedButton == "blue")
+        {
+            Instantiate(obj3,wp, Quaternion.Euler(adj_ang));
+        }
+    }
+
+    private void resetButtons(){
+                red.interactable=true;
+                green.interactable=true;
+                blue.interactable=true;
+        }
 }
