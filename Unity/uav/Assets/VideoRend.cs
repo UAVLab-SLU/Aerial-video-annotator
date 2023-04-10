@@ -68,6 +68,7 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
         red.onClick.AddListener(RedButton);
         
         selectedButton = "green";
+        green.interactable=false;
 
         // RectTransform rectTransform = green.GetComponent<RectTransform>();
 
@@ -164,13 +165,14 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
 
         if (Input.GetMouseButtonDown(0))
         {
-           Dictionary<string, string> payload = new Dictionary<string, string>();
+            
+           
            Vector3 mousePos = Input.mousePosition;
+           if(mousePos.y < (canv.GetComponent<RectTransform>().rect.height - 35 ))
            {
-
-               payload.Add("xpos", mousePos.x.ToString());
-               payload.Add("ypos", mousePos.y.ToString());
-           }
+            Dictionary<string, string> payload = new Dictionary<string, string>();
+           payload.Add("xpos", mousePos.x.ToString());
+           payload.Add("ypos", mousePos.y.ToString());
            payload.Add("lat", lat.ToString());
            payload.Add("alt", alt.ToString());
            payload.Add("lon", lon.ToString());
@@ -178,10 +180,14 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
            payload.Add("x", x.ToString());
            payload.Add("y", y.ToString());
            payload.Add("z", z.ToString());
+           payload.Add("resh",canv.GetComponent<RectTransform>().rect.height.ToString());
+           payload.Add("resw",canv.GetComponent<RectTransform>().rect.width.ToString());
            
            string result = string.Join(",", payload.Select(x => '"' + x.Key + '"' + ": " + '"' + x.Value + '"'));
            byte[] data = Encoding.UTF8.GetBytes(result);
            client.Send(data, data.Length, endPoint);
+           }
+           
         }
 
     }
