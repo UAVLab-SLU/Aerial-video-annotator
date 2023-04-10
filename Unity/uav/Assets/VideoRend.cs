@@ -166,27 +166,42 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
         if (Input.GetMouseButtonDown(0))
         {
             
-           
-           Vector3 mousePos = Input.mousePosition;
-           if(mousePos.y < (canv.GetComponent<RectTransform>().rect.height - 35 ))
-           {
+        //    RaycastHit2D[] hits = Physics2D.GetRayIntersectionAll(Camera.main.ScreenPointToRay(Input.mousePosition));
+        //    Debug.Log(hits.Length);
+        //    foreach (var element in hits)
+        //     {
+        //         Debug.Log(element);
+        //     }
+
+            PointerEventData pe = new PointerEventData(EventSystem.current);
+            pe.position = Input.mousePosition;
+            List<RaycastResult> resList = new List<RaycastResult>();
+            EventSystem.current.RaycastAll(pe,resList);
+            // for(int i = 0;i<resList.Count;i++){
+            //     Debug.Log(resList[i]);
+            // }
+
+
+            Vector3 mousePos = Input.mousePosition;
+            if(resList.Count == 1)
+            {
             Dictionary<string, string> payload = new Dictionary<string, string>();
-           payload.Add("xpos", mousePos.x.ToString());
-           payload.Add("ypos", mousePos.y.ToString());
-           payload.Add("lat", lat.ToString());
-           payload.Add("alt", alt.ToString());
-           payload.Add("lon", lon.ToString());
-           payload.Add("w", w.ToString());
-           payload.Add("x", x.ToString());
-           payload.Add("y", y.ToString());
-           payload.Add("z", z.ToString());
-           payload.Add("resh",canv.GetComponent<RectTransform>().rect.height.ToString());
-           payload.Add("resw",canv.GetComponent<RectTransform>().rect.width.ToString());
-           
-           string result = string.Join(",", payload.Select(x => '"' + x.Key + '"' + ": " + '"' + x.Value + '"'));
-           byte[] data = Encoding.UTF8.GetBytes(result);
-           client.Send(data, data.Length, endPoint);
-           }
+            payload.Add("xpos", mousePos.x.ToString());
+            payload.Add("ypos", mousePos.y.ToString());
+            payload.Add("lat", lat.ToString());
+            payload.Add("alt", alt.ToString());
+            payload.Add("lon", lon.ToString());
+            payload.Add("w", w.ToString());
+            payload.Add("x", x.ToString());
+            payload.Add("y", y.ToString());
+            payload.Add("z", z.ToString());
+            payload.Add("resh",canv.GetComponent<RectTransform>().rect.height.ToString());
+            payload.Add("resw",canv.GetComponent<RectTransform>().rect.width.ToString());
+
+            string result = string.Join(",", payload.Select(x => '"' + x.Key + '"' + ": " + '"' + x.Value + '"'));
+            byte[] data = Encoding.UTF8.GetBytes(result);
+            client.Send(data, data.Length, endPoint);
+            }
            
         }
 
