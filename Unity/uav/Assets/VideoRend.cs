@@ -45,18 +45,7 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
 
 
 
-    // GameObject currentHover;
-
-    // public void OnPointerEnter(PointerEventData eventData) {
-    //     if (eventData.pointerCurrentRaycast.gameObject != null) {
-    //         Debug.Log("Mouse Over: " + eventData.pointerCurrentRaycast.gameObject.name);
-    //         currentHover = eventData.pointerCurrentRaycast.gameObject;
-    //     }
-    // }
-
-    // public void OnPointerExit(PointerEventData eventData) {
-    //     currentHover = null;
-    // }
+    
 
     void Start()
     {
@@ -70,14 +59,7 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
         selectedButton = "green";
         green.interactable=false;
 
-        // RectTransform rectTransform = green.GetComponent<RectTransform>();
-
-        // // Convert the Button's position to screen space
-        // Vector2 screenPosition;
-        // RectTransformUtility.ScreenPointToLocalPointInRectangle(canv.transform as RectTransform, rectTransform.position, canv.worldCamera, out screenPosition);
-
-        // // Print the Button's position with respect to the Canvas
-        // Debug.Log(screenPosition);
+       
     }
 
 
@@ -87,15 +69,10 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
     {
 
 
-        // if (currentHover){
-        //      Debug.Log(currentHover.name + " @ " + Input.mousePosition);
-        // }
-           
-
+       
+        // UdpConnection to get frame and metadata
         if (client.Available > 0)
         {
-
-
             byte[] data = client.Receive(ref endPoint);
             string text = Encoding.UTF8.GetString(data);
             //Debug.Log(text);
@@ -142,6 +119,7 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
 
         }
 
+        // Udp connection to get GeoLocation 
         if (client2.Available > 0)
         {
 
@@ -159,20 +137,12 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
 
         }
 
-        // if(!EventSystem.current.IsPointerOverGameObject()){
-        //     Debug.Log("True");
-        // }
-
+        //Placing object when user clicks on the screen
         if (Input.GetMouseButtonDown(0))
         {
             
-        //    RaycastHit2D[] hits = Physics2D.GetRayIntersectionAll(Camera.main.ScreenPointToRay(Input.mousePosition));
-        //    Debug.Log(hits.Length);
-        //    foreach (var element in hits)
-        //     {
-        //         Debug.Log(element);
-        //     }
-
+        
+            // To prevent placing object when user clicks on a button
             PointerEventData pe = new PointerEventData(EventSystem.current);
             pe.position = Input.mousePosition;
             List<RaycastResult> resList = new List<RaycastResult>();
@@ -234,6 +204,7 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
         resetButtons();
         blue.interactable=false;
     }
+
     private void InstObj(Vector3 wp){
         if(selectedButton == "green"){
             Instantiate(obj1,wp, Quaternion.Euler(adj_ang));
@@ -249,8 +220,8 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
     }
 
     private void resetButtons(){
-                red.interactable=true;
-                green.interactable=true;
-                blue.interactable=true;
-        }
+        red.interactable=true;
+        green.interactable=true;
+        blue.interactable=true;
+    }
 }
