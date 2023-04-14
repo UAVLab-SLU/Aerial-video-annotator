@@ -22,10 +22,11 @@ import GeoCoordinationHandler as GC
 import olympe
 from olympe.messages.ardrone3.Piloting import TakeOff, Landing
 from olympe.messages.ardrone3.Piloting import moveBy
-from olympe.messages.ardrone3.PilotingState import FlyingStateChanged
+from olympe.messages.ardrone3.PilotingState import GpsLocationChanged, PositionChanged
 from olympe.messages.ardrone3.PilotingSettings import MaxTilt
 from olympe.messages.ardrone3.PilotingSettingsState import MaxTiltChanged
-from olympe.messages.ardrone3.GPSSettingsState import GPSFixStateChanged
+from olympe.messages.ardrone3.GPSSettingsState import GPSFixStateChanged, HomeChanged
+from olympe.messages.ardrone3.GPSSettings import SetHome
 from olympe.video.renderer import PdrawRenderer
 
 from olympe.messages.gimbal import (
@@ -34,8 +35,8 @@ from olympe.messages.gimbal import (
 
 olympe.log.update_config({"loggers": {"olympe": {"level": "WARNING"}}})
 
-DRONE_IP = os.environ.get("DRONE_IP", "10.202.0.1")
-# DRONE_IP = os.environ.get("DRONE_IP", "192.168.42.1")
+# DRONE_IP = os.environ.get("DRONE_IP", "10.202.0.1")
+DRONE_IP = os.environ.get("DRONE_IP", "192.168.42.1")
 
 DRONE_RTSP_PORT = os.environ.get("DRONE_RTSP_PORT")
 sock = U.UdpComms(udpIP="127.0.0.1", portTX=8080, portRX=8001, enableRX=True, suppressWarnings=True)
@@ -66,7 +67,9 @@ class StreamingExample:
             video=os.path.join(self.tempd, "streaming.mp4"),
             metadata=os.path.join(self.tempd, "streaming_metadata.json"),
         )
-
+        self.drone(GPSFixStateChanged(_policy='wait'))
+        self.drone(HomeChanged(38.6359399,-90.2276716,0,_policy='wait'))
+       
         # Setup your callback functions to do some live video processing
         self.drone.streaming.set_callbacks(
             raw_cb=self.yuv_frame_cb,
@@ -127,15 +130,17 @@ class StreamingExample:
             info["raw"]["frame"]["info"]["width"],
         )
         print(yuv_frame.vmeta())
-        
+        # print(self.drone.get_state(HomeChanged))
+        print(self.drone.get_state(GpsLocationChanged))
+        print('ggggggg',self.drone.get_state(GPSFixStateChanged))
         di = {}
-        di['lat'] = yuv_frame.vmeta()[1]["camera"]["location"]["latitude"]
-        di['lon'] = yuv_frame.vmeta()[1]["camera"]["location"]["longitude"]
-        di['w'] = yuv_frame.vmeta()[1]["camera"]["base_quat"]["w"]
-        di['x'] = yuv_frame.vmeta()[1]["camera"]["base_quat"]["x"]
-        di['y'] = yuv_frame.vmeta()[1]["camera"]["base_quat"]["y"]
-        di['z'] = yuv_frame.vmeta()[1]["camera"]["base_quat"]["z"]
-        di['alt'] = yuv_frame.vmeta()[1]["camera"]["location"]["altitude_egm96amsl"]
+        # di['lat'] = yuv_frame.vmeta()[1]["camera"]["location"]["latitude"]
+        # di['lon'] = yuv_frame.vmeta()[1]["camera"]["location"]["longitude"]
+        # di['w'] = yuv_frame.vmeta()[1]["camera"]["base_quat"]["w"]
+        # di['x'] = yuv_frame.vmeta()[1]["camera"]["base_quat"]["x"]
+        # di['y'] = yuv_frame.vmeta()[1]["camera"]["base_quat"]["y"]
+        # di['z'] = yuv_frame.vmeta()[1]["camera"]["base_quat"]["z"]
+        # di['alt'] = yuv_frame.vmeta()[1]["camera"]["location"]["altitude_egm96amsl"]
         
         # print(di)
         # convert pdraw YUV flag to OpenCV YUV flag
@@ -151,70 +156,34 @@ class StreamingExample:
         di['image'] = encoded_string.decode()
         sock.SendData(json.dumps(di).encode('utf-8'))
         print("...")
-        data = sock.ReadReceivedData() 
-        if data != None: # if NEW data has been received since last ReadReceivedData function call
-            print(type(data)) # print new received data
-            print(data)
-            data = "{"+data+"}"
-            data = json.loads(data)
-            c = GC.CameraRayProjection(67,[float(data["lat"]),float(data["lon"]),float(data["alt"])],[int(float(data["resw"])),int(float(data["resh"]))],GC.Coordinates(int(float(data["xpos"])),int(float(data["ypos"]))),[float(data["x"]), float(data["y"]), float(data["z"]), float(data["w"])])
-            target_direction_ENU = c.target_ENU()
-            target_direction_ECEF = c.ENU_to_ECEF(target_direction_ENU)
-            intersect_ECEF = c.target_location(target_direction_ECEF)
-            #print("Intersect ECEF", intersect_ECEF.x,intersect_ECEF.y,intersect_ECEF.z)
-            intersect_LLA = c.ECEFtoLLA(intersect_ECEF.x,intersect_ECEF.y,intersect_ECEF.z)
-            print(intersect_LLA)
-            di2 = {
-                'lat' : str(intersect_LLA[0]),
-                'lon' : str(intersect_LLA[1]),
-                'alt' : str(intersect_LLA[2])
-            }
-            sock2.SendData(json.dumps(di2).encode('utf-8'))
+        # data = sock.ReadReceivedData() 
+        # if data != None: # if NEW data has been received since last ReadReceivedData function call
+        #     print(type(data)) # print new received data
+        #     print(data)
+        #     data = "{"+data+"}"
+        #     data = json.loads(data)
+        #     c = GC.CameraRayProjection(67,[float(data["lat"]),float(data["lon"]),float(data["alt"])],[int(float(data["resw"])),int(float(data["resh"]))],GC.Coordinates(int(float(data["xpos"])),int(float(data["ypos"]))),[float(data["x"]), float(data["y"]), float(data["z"]), float(data["w"])])
+        #     target_direction_ENU = c.target_ENU()
+        #     target_direction_ECEF = c.ENU_to_ECEF(target_direction_ENU)
+        #     intersect_ECEF = c.target_location(target_direction_ECEF)
+        #     #print("Intersect ECEF", intersect_ECEF.x,intersect_ECEF.y,intersect_ECEF.z)
+        #     intersect_LLA = c.ECEFtoLLA(intersect_ECEF.x,intersect_ECEF.y,intersect_ECEF.z)
+        #     print(intersect_LLA)
+        #     di2 = {
+        #         'lat' : str(intersect_LLA[0]),
+        #         'lon' : str(intersect_LLA[1]),
+        #         'alt' : str(intersect_LLA[2])
+        #     }
+        #     sock2.SendData(json.dumps(di2).encode('utf-8'))
             
 
     def fly(self):
-        # print('Streamingggggggggggg')
-        # time.sleep(680)
+       
+        print('Streamingggggggggggg')
+        time.sleep(680)
         # Takeoff, fly, land, ...
         print("Takeoff if necessary...")
-        self.drone(
-            FlyingStateChanged(state="hovering", _policy="check")
-            | FlyingStateChanged(state="flying", _policy="check")
-            | (
-                GPSFixStateChanged(fixed=1, _timeout=10, _policy="check_wait")
-                >> (
-                    TakeOff(_no_expect=True)
-                    & FlyingStateChanged(
-                        state="hovering", _timeout=10, _policy="check_wait"
-                    )
-                )
-            )
-        ).wait()
-        maxtilt = self.drone.get_state(MaxTiltChanged)["max"]
-        self.drone(MaxTilt(maxtilt)).wait()
         
-        self.drone( set_target( gimbal_id = 0,
-                                  control_mode = "position",
-                                  yaw_frame_of_reference = "relative",
-                                  yaw = 0.0,
-                                  pitch_frame_of_reference = "relative",
-                                  pitch = -70.0,
-                                  roll_frame_of_reference = "relative",
-                                  roll = 0.0
-                                ) ).wait()
-        self.drone(moveBy(0,0,-40,0,_timeout=100)).wait().success()
-        self.drone(moveBy(60,0,0,0,_timeout=100)).wait().success()
-        self.drone(moveBy(0,60,0,0,_timeout=100)).wait().success()
-        self.drone(moveBy(-60,0,0,0,_timeout=100)).wait().success()
-        self.drone(moveBy(0,-60,0,0,_timeout=100)).wait().success()
-        self.drone(moveBy(0,0,40,0,_timeout=100)).wait().success()
-        # for i in range(4):
-        #     print(f"Moving by ({i + 1}/4)...")
-        #     self.drone(moveBy(10, 0, 0, math.pi, _timeout=20)).wait().success()
-
-        print("Landing...")
-        self.drone(Landing() >> FlyingStateChanged(state="landed", _timeout=5)).wait()
-        print("Landed\n")
         
  
 
