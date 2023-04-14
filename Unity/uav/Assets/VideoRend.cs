@@ -77,13 +77,13 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
             string text = Encoding.UTF8.GetString(data);
             //Debug.Log(text);
             var values = JsonConvert.DeserializeObject<Dictionary<string, string>>(text);
-            lat = (float) Convert.ToDouble(values["lat"]);
-            lon = (float) Convert.ToDouble(values["lon"]);
-            alt =  (float) Convert.ToDouble(values["alt"]);
-            w =  (float) Convert.ToDouble(values["w"]);
-            x =  (float) Convert.ToDouble(values["x"]);
-            y =  (float) Convert.ToDouble(values["y"]);
-            z =  (float) Convert.ToDouble(values["z"]);
+            // lat = (float) Convert.ToDouble(values["lat"]);
+            // lon = (float) Convert.ToDouble(values["lon"]);
+            // alt =  (float) Convert.ToDouble(values["alt"]);
+            // w =  (float) Convert.ToDouble(values["w"]);
+            // x =  (float) Convert.ToDouble(values["x"]);
+            // y =  (float) Convert.ToDouble(values["y"]);
+            // z =  (float) Convert.ToDouble(values["z"]);
             if (values["image"] != null)
             {
                 byte[] result = Convert.FromBase64String(values["image"]);
@@ -97,24 +97,24 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
             // Debug.Log(world_pos);
 
             
-            var quat = new Quaternion(x,y,z,w);
+            // var quat = new Quaternion(x,y,z,w);
             
-            // Debug.Log(quat.eulerAngles);
-            var ang = GPSEncoder.QuatToEuler(quat);
-            adj_ang = new Vector3();
-            adj_ang.x = -1.0f*ang.y;
-            // Debug.Log(adj_ang.x);
-            adj_ang.z = ang.x;
-            adj_ang.y = ang.z;
-            float tempv = (float)Math.PI/180;
-            float c = (90.0f-adj_ang.x) * tempv;
-            float tempang = (float)Math.Cos(c);
-            float ht = alt/tempang;
-            canv.planeDistance = ht+1;
-            Quaternion rotat = Quaternion.Euler(adj_ang);
-            drone.transform.rotation = rotat;
-            Debug.Log(ang);
-            drone.transform.position = world_pos; 
+            // // Debug.Log(quat.eulerAngles);
+            // var ang = GPSEncoder.QuatToEuler(quat);
+            // adj_ang = new Vector3();
+            // adj_ang.x = -1.0f*ang.y;
+            // // Debug.Log(adj_ang.x);
+            // adj_ang.z = ang.x;
+            // adj_ang.y = ang.z;
+            // float tempv = (float)Math.PI/180;
+            // float c = (90.0f-adj_ang.x) * tempv;
+            // float tempang = (float)Math.Cos(c);
+            // float ht = alt/tempang;
+            // canv.planeDistance = ht+1;
+            // Quaternion rotat = Quaternion.Euler(adj_ang);
+            // drone.transform.rotation = rotat;
+            // Debug.Log(ang);
+            // drone.transform.position = world_pos; 
 
 
         }
