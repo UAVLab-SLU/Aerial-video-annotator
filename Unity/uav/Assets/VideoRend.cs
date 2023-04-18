@@ -37,13 +37,15 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
     float z = 0.0f;
 
     private Vector3 adj_ang;
+    private Quaternion rotat;
     string selectedButton;
     
     public Button green;
     public Button blue;
     public Button red;
 
-
+    bool Po;
+    
 
     
 
@@ -58,6 +60,7 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
         
         selectedButton = "green";
         green.interactable=false;
+        Po = true;
 
        
     }
@@ -94,10 +97,16 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
             var world_pos = GPSEncoder.GPSToUCS(lat,lon);
             world_pos.y =alt;
             
+            if(Po){
+                InstObj(world_pos);
+                Debug.Log("Object placed");
+                Po = false;
+            }
             // Debug.Log(world_pos);
 
             
             var quat = new Quaternion(x,y,z,w);
+        
             
             // Debug.Log(quat.eulerAngles);
             var ang = GPSEncoder.QuatToEuler(quat);
@@ -111,9 +120,9 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
             float tempang = (float)Math.Cos(c);
             float ht = alt/tempang;
             canv.planeDistance = ht+1;
-            Quaternion rotat = Quaternion.Euler(adj_ang);
+            rotat = Quaternion.Euler(adj_ang);
             drone.transform.rotation = rotat;
-            Debug.Log(ang);
+            // Debug.Log(ang);
             drone.transform.position = world_pos; 
 
 
@@ -161,6 +170,17 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
             payload.Add("lat", lat.ToString());
             payload.Add("alt", alt.ToString());
             payload.Add("lon", lon.ToString());
+            // Debug.Log(w);
+            // Debug.Log(rotat.w);
+            // Debug.Log("_________________");
+            // Debug.Log(x);
+            // Debug.Log(rotat.x);
+            // Debug.Log("_________________");
+            // Debug.Log(y);
+            // Debug.Log(rotat.y);
+            // Debug.Log("_________________");
+            // Debug.Log(z);
+            // Debug.Log(rotat.z);
             payload.Add("w", w.ToString());
             payload.Add("x", x.ToString());
             payload.Add("y", y.ToString());
@@ -206,6 +226,7 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
     }
 
     private void InstObj(Vector3 wp){
+        adj_ang.x = 90;
         if(selectedButton == "green"){
             Instantiate(obj1,wp, Quaternion.Euler(adj_ang));
         }
