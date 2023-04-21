@@ -149,60 +149,60 @@ public sealed class GPSEncoder {
 
 	public  Vector3 QuaternionToRotationVector(Quaternion quaternion)
     {
-        // float w = quaternion.w;
-        // float x = quaternion.x;
-        // float y = quaternion.y;
-        // float z = quaternion.z;
+        float w = quaternion.w;
+        float x = quaternion.x;
+        float y = quaternion.y;
+        float z = quaternion.z;
 
-        // float roll = Mathf.Atan2(2 * (w * x + y * z), 1 - 2 * (x * x + y * y)) * Mathf.Rad2Deg;
-        // float pitch = Mathf.Asin(2 * (w * y - z * x)) * Mathf.Rad2Deg;
-        // float yaw = Mathf.Atan2(2 * (w * z + x * y), 1 - 2 * (y * y + z * z)) * Mathf.Rad2Deg;
+        float roll = Mathf.Atan2(2 * (w * x + y * z), 1 - 2 * (x * x + y * y)) * Mathf.Rad2Deg;
+        float pitch = Mathf.Asin(2 * (w * y - z * x)) * Mathf.Rad2Deg;
+        float yaw = Mathf.Atan2(2 * (w * z + x * y), 1 - 2 * (y * y + z * z)) * Mathf.Rad2Deg;
 
-		float w = quaternion.w;
-		float x = quaternion.x;
-		float y = quaternion.y;
-		float z = quaternion.z;
+		// float w = quaternion.w;
+		// float x = quaternion.x;
+		// float y = quaternion.y;
+		// float z = quaternion.z;
 
-		float roll;
-		float pitch;
-		float yaw;
+		// float roll;
+		// float pitch;
+		// float yaw;
 
-		// Check for quaternion validity
-		float magnitudeSquared = w * w + x * x + y * y + z * z;
-		if (magnitudeSquared < Mathf.Epsilon)
-		{
-			// Quaternion is not valid, set roll, pitch, and yaw to 0
-			roll = 0;
-			pitch = 0;
-			yaw = 0;
-		}
-		else
-		{
-			float sinR = 2 * (w * x + y * z);
-			float cosR = 1 - 2 * (x * x + y * y);
-			if (Mathf.Abs(sinR) >= 1 || Mathf.Abs(cosR) < Mathf.Epsilon)
-			{
-				roll = Mathf.Sign(sinR) * 90; // Set roll to 90 degrees or -90 degrees
-				pitch = 0; // Set pitch to 0 when roll is 90 or -90 degrees
-				yaw = Mathf.Atan2(2 * (w * z + x * y), 1 - 2 * (y * y + z * z)) * Mathf.Rad2Deg; // Calculate yaw normally
-			}
-			else
-			{
-				roll = Mathf.Atan2(sinR, cosR) * Mathf.Rad2Deg; // Calculate roll normally
-				pitch = Mathf.Asin(Mathf.Clamp(2 * (w * y - z * x), -1f, 1f)) * Mathf.Rad2Deg; // Calculate pitch normally with clamping
-				yaw = Mathf.Atan2(2 * (w * z + x * y), 1 - 2 * (y * y + z * z)) * Mathf.Rad2Deg; // Calculate yaw normally
-			}
+		// // Check for quaternion validity
+		// float magnitudeSquared = w * w + x * x + y * y + z * z;
+		// if (magnitudeSquared < Mathf.Epsilon)
+		// {
+		// 	// Quaternion is not valid, set roll, pitch, and yaw to 0
+		// 	roll = 0;
+		// 	pitch = 0;
+		// 	yaw = 0;
+		// }
+		// else
+		// {
+		// 	float sinR = 2 * (w * x + y * z);
+		// 	float cosR = 1 - 2 * (x * x + y * y);
+		// 	if (Mathf.Abs(sinR) >= 1 || Mathf.Abs(cosR) < Mathf.Epsilon)
+		// 	{
+		// 		roll = Mathf.Sign(sinR) * 90; // Set roll to 90 degrees or -90 degrees
+		// 		pitch = 0; // Set pitch to 0 when roll is 90 or -90 degrees
+		// 		yaw = Mathf.Atan2(2 * (w * z + x * y), 1 - 2 * (y * y + z * z)) * Mathf.Rad2Deg; // Calculate yaw normally
+		// 	}
+		// 	else
+		// 	{
+		// 		roll = Mathf.Atan2(sinR, cosR) * Mathf.Rad2Deg; // Calculate roll normally
+		// 		pitch = Mathf.Asin(Mathf.Clamp(2 * (w * y - z * x), -1f, 1f)) * Mathf.Rad2Deg; // Calculate pitch normally with clamping
+		// 		yaw = Mathf.Atan2(2 * (w * z + x * y), 1 - 2 * (y * y + z * z)) * Mathf.Rad2Deg; // Calculate yaw normally
+		// 	}
 
-			// Check for yaw close to 90 degrees
-			float sinY = 2 * (w * z + x * y);
-			float cosY = 1 - 2 * (y * y + z * z);
-			if (Mathf.Abs(sinY) >= 1 || Mathf.Abs(cosY) < Mathf.Epsilon)
-			{
-				roll = Mathf.Atan2(2 * (w * x + y * z), 1 - 2 * (x * x + y * y)) * Mathf.Rad2Deg; // Calculate roll normally
-				pitch = Mathf.Asin(Mathf.Clamp(2 * (w * y - z * x), -1f, 1f)) * Mathf.Rad2Deg; // Calculate pitch normally with clamping
-				yaw = Mathf.Sign(sinY) * 90; // Set yaw to 90 degrees or -90 degrees
-			}
-		}
+		// 	// Check for yaw close to 90 degrees
+		// 	float sinY = 2 * (w * z + x * y);
+		// 	float cosY = 1 - 2 * (y * y + z * z);
+		// 	if (Mathf.Abs(sinY) >= 1 || Mathf.Abs(cosY) < Mathf.Epsilon)
+		// 	{
+		// 		roll = Mathf.Atan2(2 * (w * x + y * z), 1 - 2 * (x * x + y * y)) * Mathf.Rad2Deg; // Calculate roll normally
+		// 		pitch = Mathf.Asin(Mathf.Clamp(2 * (w * y - z * x), -1f, 1f)) * Mathf.Rad2Deg; // Calculate pitch normally with clamping
+		// 		yaw = Mathf.Sign(sinY) * 90; // Set yaw to 90 degrees or -90 degrees
+		// 	}
+		// }
 
         return new Vector3(roll, pitch, yaw);
     }

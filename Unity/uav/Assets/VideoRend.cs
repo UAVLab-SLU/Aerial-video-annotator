@@ -35,8 +35,11 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
     float x = 0.0f;
     float y = 0.0f;
     float z = 0.0f;
+    float pitch = 0;
+    float roll = 0;
+    float yaw = 0;
 
-    private Vector3 adj_ang;
+    private Vector3 ang;
     private Quaternion rotat;
     string selectedButton;
     
@@ -82,11 +85,14 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
             var values = JsonConvert.DeserializeObject<Dictionary<string, string>>(text);
             lat = (float) Convert.ToDouble(values["lat"]);
             lon = (float) Convert.ToDouble(values["lon"]);
-            alt =  (float) Convert.ToDouble(values["alt"]);
-            w =  (float) Convert.ToDouble(values["w"]);
-            x =  (float) Convert.ToDouble(values["x"]);
-            y =  (float) Convert.ToDouble(values["y"]);
-            z =  (float) Convert.ToDouble(values["z"]);
+            alt = (float) Convert.ToDouble(values["alt"]);
+            w = (float) Convert.ToDouble(values["w"]);
+            x = (float) Convert.ToDouble(values["x"]);
+            y = (float) Convert.ToDouble(values["y"]);
+            z = (float) Convert.ToDouble(values["z"]);
+            pitch = (float) Convert.ToDouble(values["pitch"]);
+            roll = (float) Convert.ToDouble(values["roll"]);
+            yaw = (float) Convert.ToDouble(values["yaw"]);
             if (values["image"] != null)
             {
                 byte[] result = Convert.FromBase64String(values["image"]);
@@ -102,25 +108,19 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
                 Debug.Log("Object placed");
                 Po = false;
             }
-            // Debug.Log(world_pos);
+            
+            ang.x = -1.0f*pitch;
+            ang.y = yaw;
+            ang.z = -1.0f*roll;
 
-            
-            var quat = new Quaternion(x,y,z,w);
-        
-            
-            // Debug.Log(quat.eulerAngles);
-            var ang = GPSEncoder.QuatToEuler(quat);
-            adj_ang = new Vector3();
-            adj_ang.x = -1.0f*ang.y;
-            // Debug.Log(adj_ang.x);
-            adj_ang.z = ang.x;
-            adj_ang.y = ang.z;
+            Debug.Log(ang);
             float tempv = (float)Math.PI/180;
-            float c = (90.0f-adj_ang.x) * tempv;
+            float c = (90.0f-ang.x) * tempv;
             float tempang = (float)Math.Cos(c);
             float ht = alt/tempang;
             canv.planeDistance = ht+1;
-            rotat = Quaternion.Euler(adj_ang);
+            rotat = Quaternion.Euler(ang);
+            // Debug.Log(rotat);
             drone.transform.rotation = rotat;
             // Debug.Log(ang);
             drone.transform.position = world_pos; 
@@ -226,17 +226,17 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
     }
 
     private void InstObj(Vector3 wp){
-        adj_ang.x = 90;
+        ang.x = 90;
         if(selectedButton == "green"){
-            Instantiate(obj1,wp, Quaternion.Euler(adj_ang));
+            Instantiate(obj1,wp, Quaternion.Euler(ang));
         }
         else if(selectedButton == "red")
         {
-            Instantiate(obj2,wp, Quaternion.Euler(adj_ang));
+            Instantiate(obj2,wp, Quaternion.Euler(ang));
         }
         else if(selectedButton == "blue")
         {
-            Instantiate(obj3,wp, Quaternion.Euler(adj_ang));
+            Instantiate(obj3,wp, Quaternion.Euler(ang));
         }
     }
 
