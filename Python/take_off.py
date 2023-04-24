@@ -18,6 +18,7 @@ import cv2
 import base64
 import json
 import GeoCoordinationHandler as GC
+import numpy as np
 
 import olympe
 from olympe.messages.ardrone3.Piloting import TakeOff, Landing
@@ -126,7 +127,7 @@ class StreamingExample:
             info["raw"]["frame"]["info"]["height"],
             info["raw"]["frame"]["info"]["width"],
         )
-        print(yuv_frame.vmeta())
+        # print(yuv_frame.vmeta())
         
         di = {}
         di['lat'] = yuv_frame.vmeta()[1]["camera"]["location"]["latitude"]
@@ -136,7 +137,14 @@ class StreamingExample:
         di['y'] = yuv_frame.vmeta()[1]["camera"]["base_quat"]["y"]
         di['z'] = yuv_frame.vmeta()[1]["camera"]["base_quat"]["z"]
         di['alt'] = yuv_frame.vmeta()[1]["camera"]["location"]["altitude_egm96amsl"]
+        # di['roll'],di['pitch'],di['yaw'] = self.quaternion_to_euler(di['y']*-1.0,di['z']*-1.0,di['w'],di['x'])
+        di['roll'],di['pitch'],di['yaw'] = self.quaternion_to_euler(di['w'],di['x'],di['y'],di['z'])
+        di['pitch'] = 180.0 - di['pitch']
+        di['roll'] = 180.0 - di['roll']
+        # di['yaw'] = 180.0 + di['yaw']
         
+        print(di['roll'],di['pitch'],di['yaw'])
+        # print(di['roll'],di["pitch"],di['yaw'])
         # print(di)
         # convert pdraw YUV flag to OpenCV YUV flag
         cv2_cvt_color_flag = {
@@ -157,7 +165,7 @@ class StreamingExample:
             print(data)
             data = "{"+data+"}"
             data = json.loads(data)
-            c = GC.CameraRayProjection(67,[float(data["lat"]),float(data["lon"]),float(data["alt"])],[int(float(data["resw"])),int(float(data["resh"]))],GC.Coordinates(int(float(data["xpos"])),int(float(data["ypos"]))),[float(data["x"]), float(data["y"]), float(data["z"]), float(data["w"])])
+            c = GC.CameraRayProjection(69,[float(data["lat"]),float(data["lon"]),float(data["alt"])],[int(float(data["resw"])),int(float(data["resh"]))],GC.Coordinates(int(float(data["xpos"])),int(float(data["ypos"]))),[float(data["w"]),float(data["x"]), float(data["y"]), float(data["z"])])
             target_direction_ENU = c.target_ENU()
             target_direction_ECEF = c.ENU_to_ECEF(target_direction_ENU)
             intersect_ECEF = c.target_location(target_direction_ECEF)
@@ -198,16 +206,17 @@ class StreamingExample:
                                   yaw_frame_of_reference = "relative",
                                   yaw = 0.0,
                                   pitch_frame_of_reference = "relative",
-                                  pitch = -70.0,
+                                  pitch = -45.0,
                                   roll_frame_of_reference = "relative",
                                   roll = 0.0
                                 ) ).wait()
-        self.drone(moveBy(0,0,-40,0,_timeout=100)).wait().success()
-        self.drone(moveBy(60,0,0,0,_timeout=100)).wait().success()
-        self.drone(moveBy(0,60,0,0,_timeout=100)).wait().success()
-        self.drone(moveBy(-60,0,0,0,_timeout=100)).wait().success()
-        self.drone(moveBy(0,-60,0,0,_timeout=100)).wait().success()
-        self.drone(moveBy(0,0,40,0,_timeout=100)).wait().success()
+        self.drone(moveBy(0,0,-50,0,_timeout=1000)).wait().success()
+        time.sleep(30)
+        # self.drone(moveBy(80,0,0,0,_timeout=100)).wait().success()
+        # self.drone(moveBy(0,60,0,0,_timeout=100)).wait().success()
+        # self.drone(moveBy(-80,0,0,0,_timeout=100)).wait().success()
+        # self.drone(moveBy(0,-60,0,0,_timeout=100)).wait().success()
+        self.drone(moveBy(0,0,50,0,_timeout=100)).wait().success()
         # for i in range(4):
         #     print(f"Moving by ({i + 1}/4)...")
         #     self.drone(moveBy(10, 0, 0, math.pi, _timeout=20)).wait().success()
@@ -215,6 +224,32 @@ class StreamingExample:
         print("Landing...")
         self.drone(Landing() >> FlyingStateChanged(state="landed", _timeout=5)).wait()
         print("Landed\n")
+
+        import numpy as np
+
+    def quaternion_to_euler(self,w, x, y, z):
+        ysqr = y * y
+
+        t0 = +2.0 * (w * x + y * z)
+        t1 = +1.0 - 2.0 * (x * x + ysqr)
+        X = np.degrees(np.arctan2(t0, t1))
+
+        t2 = +2.0 * (w * y - z * x)
+        t2 = np.where(t2>+1.0,+1.0,t2)
+        #t2 = +1.0 if t2 > +1.0 else t2
+
+        t2 = np.where(t2<-1.0, -1.0, t2)
+        #t2 = -1.0 if t2 < -1.0 else t2
+        Y = np.degrees(np.arcsin(t2))
+
+        t3 = +2.0 * (w * z + x * y)
+        t4 = +1.0 - 2.0 * (ysqr + z * z)
+        Z = np.degrees(np.arctan2(t3, t4))
+
+        return X, Y, Z
+
+
+# print(quaternion_to_euler_angle_vectorized1(0.290620893239975, -0.6446235179901123, -0.2906208634376526,-0.6446235775947571))
         
  
 
