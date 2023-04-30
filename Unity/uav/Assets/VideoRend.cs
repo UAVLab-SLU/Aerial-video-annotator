@@ -9,6 +9,7 @@ using UnityEngine.EventSystems;
 using System;
 using System.Linq;
 using Newtonsoft.Json;
+using Recognissimo.Components;
 
 public class VideoRend : MonoBehaviour//,IPointerEnterHandler
 {
@@ -19,11 +20,13 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
     public GameObject obj1;
     public GameObject obj2;
     public GameObject obj3;
+    public GameObject circle;
     UdpClient client;
     UdpClient client2;
     IPEndPoint endPoint;
     public GPSEncoder GE;
     private int count;
+
 
     float lat = 0.0f;
     float lon = 0.0f;
@@ -46,10 +49,12 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
     public Button green;
     public Button blue;
     public Button red;
+    AudioClip clip;
+    public SpeechRecognizer speechRecognizer;
 
     bool Po;
     
-
+    // string microPhn = Microphone.devices[0];
     
 
     void Start()
@@ -65,7 +70,28 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
         green.interactable=false;
         Po = true;
 
-       
+        speechRecognizer = gameObject.AddComponent<SpeechRecognizer>();
+        var languageModelProvider = gameObject.AddComponent<StreamingAssetsLanguageModelProvider>();
+        var speechSource = gameObject.AddComponent<MicrophoneSpeechSource>();
+        // Setup StreamingAssets language model provider.
+        // Set the language used for recognition.
+        languageModelProvider.language = SystemLanguage.English;
+        // Set paths to language models.
+        languageModelProvider.languageModels = new List<StreamingAssetsLanguageModel>
+        {
+        new() {language = SystemLanguage.English, path = "LanguageModels/en-US"},
+        new() {language = SystemLanguage.French, path = "LanguageModels/fr-FR"}
+        };
+        // Setup microphone speech source. The default settings can be left unchanged, but we will do it as an example.
+        speechSource.DeviceName = null;
+        speechSource.TimeSensitivity = 0.25f;
+        // Bind speech processor dependencies.
+        speechRecognizer.LanguageModelProvider = languageModelProvider;
+        speechRecognizer.SpeechSource = speechSource;
+        // Handle events.
+        speechRecognizer.ResultReady.AddListener(OnResult);
+
+
     }
 
 
@@ -164,33 +190,34 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
             Vector3 mousePos = Input.mousePosition;
             if(resList.Count == 1)
             {
-            Dictionary<string, string> payload = new Dictionary<string, string>();
-            payload.Add("xpos", mousePos.x.ToString());
-            payload.Add("ypos", mousePos.y.ToString());
-            payload.Add("lat", lat.ToString());
-            payload.Add("alt", alt.ToString());
-            payload.Add("lon", lon.ToString());
-            // Debug.Log(w);
-            // Debug.Log(rotat.w);
-            // Debug.Log("_________________");
-            // Debug.Log(x);
-            // Debug.Log(rotat.x);
-            // Debug.Log("_________________");
-            // Debug.Log(y);
-            // Debug.Log(rotat.y);
-            // Debug.Log("_________________");
-            // Debug.Log(z);
-            // Debug.Log(rotat.z);
-            payload.Add("w", w.ToString());
-            payload.Add("x", x.ToString());
-            payload.Add("y", y.ToString());
-            payload.Add("z", z.ToString());
-            payload.Add("resh",canv.GetComponent<RectTransform>().rect.height.ToString());
-            payload.Add("resw",canv.GetComponent<RectTransform>().rect.width.ToString());
+                sendUserInput((int)mousePos.x,(int)mousePos.y);
+            // Dictionary<string, string> payload = new Dictionary<string, string>();
+            // payload.Add("xpos", mousePos.x.ToString());
+            // payload.Add("ypos", mousePos.y.ToString());
+            // payload.Add("lat", lat.ToString());
+            // payload.Add("alt", alt.ToString());
+            // payload.Add("lon", lon.ToString());
+            // // Debug.Log(w);
+            // // Debug.Log(rotat.w);
+            // // Debug.Log("_________________");
+            // // Debug.Log(x);
+            // // Debug.Log(rotat.x);
+            // // Debug.Log("_________________");
+            // // Debug.Log(y);
+            // // Debug.Log(rotat.y);
+            // // Debug.Log("_________________");
+            // // Debug.Log(z);
+            // // Debug.Log(rotat.z);
+            // payload.Add("w", w.ToString());
+            // payload.Add("x", x.ToString());
+            // payload.Add("y", y.ToString());
+            // payload.Add("z", z.ToString());
+            // payload.Add("resh",canv.GetComponent<RectTransform>().rect.height.ToString());
+            // payload.Add("resw",canv.GetComponent<RectTransform>().rect.width.ToString());
 
-            string result = string.Join(",", payload.Select(x => '"' + x.Key + '"' + ": " + '"' + x.Value + '"'));
-            byte[] data = Encoding.UTF8.GetBytes(result);
-            client.Send(data, data.Length, endPoint);
+            // string result = string.Join(",", payload.Select(x => '"' + x.Key + '"' + ": " + '"' + x.Value + '"'));
+            // byte[] data = Encoding.UTF8.GetBytes(result);
+            // client.Send(data, data.Length, endPoint);
             }
            
         }
@@ -225,18 +252,136 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
         blue.interactable=false;
     }
 
+
+
+    public void startRecord()
+    {
+        Debug.Log("Recording started");
+
+        //clip = Microphone.Start(Microphone.devices[0], true, 10, AudioSettings.outputSampleRate);
+        //Debug.Log(clip.length);
+        speechRecognizer.StartProcessing();
+    }
+    public void stopRecord()
+    {
+        Debug.Log("Recording stopped");
+        speechRecognizer.StopProcessing();
+        //Microphone.End(Microphone.devices[0]);
+        //byte[] audioData = ConvertAudioClipToByteArray(clip);
+        //// Debug.Log(audioData);
+        //Debug.Log(audioData.Length);
+        //File.WriteAllBytes("C:/Users/rushi/Desktop/Research/PythonUnity/recu1.mp3", audioData);
+        //byte[] audioDat = ConvertAudioClipToBytes(clip);
+        //// Debug.Log(audioData);
+        //Debug.Log(audioDat.Length);
+        //File.WriteAllBytes("C:/Users/rushi/Desktop/Research/PythonUnity/recu.mp3", audioDat);
+        // client2.Send(audioData, audioData.Length, endPoint);
+        
+    }
+
+    void sendUserInput(int x,int y){
+        Dictionary<string, string> payload = new Dictionary<string, string>();
+            payload.Add("xpos", x.ToString());
+            payload.Add("ypos", y.ToString());
+            payload.Add("lat", lat.ToString());
+            payload.Add("alt", alt.ToString());
+            payload.Add("lon", lon.ToString());
+            // Debug.Log(w);
+            // Debug.Log(rotat.w);
+            // Debug.Log("_________________");
+            // Debug.Log(x);
+            // Debug.Log(rotat.x);
+            // Debug.Log("_________________");
+            // Debug.Log(y);
+            // Debug.Log(rotat.y);
+            // Debug.Log("_________________");
+            // Debug.Log(z);
+            // Debug.Log(rotat.z);
+            payload.Add("w", w.ToString());
+            payload.Add("x", x.ToString());
+            payload.Add("y", y.ToString());
+            payload.Add("z", z.ToString());
+            payload.Add("resh",canv.GetComponent<RectTransform>().rect.height.ToString());
+            payload.Add("resw",canv.GetComponent<RectTransform>().rect.width.ToString());
+
+            string result = string.Join(",", payload.Select(x => '"' + x.Key + '"' + ": " + '"' + x.Value + '"'));
+            byte[] data = Encoding.UTF8.GetBytes(result);
+            client.Send(data, data.Length, endPoint);
+    }
+    private void OnResult(Result result)
+    {
+        Debug.Log(result.text);
+        int width = (int)canv.GetComponent<RectTransform>().rect.width;  
+        int height = (int)canv.GetComponent<RectTransform>().rect.height; 
+        int rectWidth = width / 2;
+        int rectHeight = height / 2;
+        string[] keywords = result.text.Split(' ');
+
+        if (keywords.Length < 2)
+        {
+            Debug.Log("Invalid input. Please provide two directions.");
+            return;
+        }
+
+        bool isValidDirection = true;
+        foreach (string keyword in keywords)
+        {
+            if (keyword != "top" && keyword != "bottom" && keyword != "left" && keyword != "right")
+            {
+                isValidDirection = false;
+                break;
+            }
+        }
+
+        if (!isValidDirection)
+        {
+            Debug.Log("Invalid directions in user input.");
+            return;
+        }
+
+        // Check directions based on keywords
+        int midpointX = 0, midpointY = 0;
+
+        foreach (string keyword in keywords)
+        {
+            switch (keyword)
+            {
+                case "top":
+                    midpointY += height - (rectHeight / 2);
+                    break;
+                case "bottom":
+                    midpointY += rectHeight / 2;
+                    break;
+                case "left":
+                    midpointX += rectWidth / 2;
+                    break;
+                case "right":
+                    midpointX += rectWidth + (rectWidth / 2);
+                    break;
+            }
+        }
+
+        Debug.Log(midpointX);
+        Debug.Log(midpointY);
+        sendUserInput(midpointX,midpointY);
+        
+    }
+
     private void InstObj(Vector3 wp){
         ang.x = 90;
         if(selectedButton == "green"){
             Instantiate(obj1,wp, Quaternion.Euler(ang));
+            Instantiate(circle,wp,Quaternion.Euler(ang));
         }
         else if(selectedButton == "red")
         {
             Instantiate(obj2,wp, Quaternion.Euler(ang));
+            Instantiate(circle,wp,Quaternion.Euler(ang));
         }
         else if(selectedButton == "blue")
         {
             Instantiate(obj3,wp, Quaternion.Euler(ang));
+            Instantiate(circle,wp,Quaternion.Euler(ang));
         }
     }
 
