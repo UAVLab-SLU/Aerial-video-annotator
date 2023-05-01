@@ -27,6 +27,7 @@ from olympe.messages.ardrone3.PilotingSettings import MaxTilt
 from olympe.messages.ardrone3.PilotingSettingsState import MaxTiltChanged
 from olympe.messages.ardrone3.GPSSettingsState import GPSFixStateChanged, HomeChanged
 from olympe.messages.ardrone3.GPSSettings import SetHome
+from olympe.messages.wifi import scan,scanned_item
 from olympe.video.renderer import PdrawRenderer
 
 from olympe.messages.gimbal import (
@@ -69,7 +70,8 @@ class StreamingExample:
         )
         self.drone(GPSFixStateChanged(_policy='wait'))
         self.drone(HomeChanged(38.6359399,-90.2276716,0,_policy='wait'))
-       
+        print(self.drone(scan(0,_timeout=100)))
+        print(self.drone(scanned_item(_policy='check_wait')))
         # Setup your callback functions to do some live video processing
         self.drone.streaming.set_callbacks(
             raw_cb=self.yuv_frame_cb,
@@ -77,7 +79,7 @@ class StreamingExample:
         )
         # Start video streaming
         self.drone.streaming.start()
-        # self.renderer = PdrawRenderer(pdraw=self.drone.streaming)
+        self.renderer = PdrawRenderer(pdraw=self.drone.streaming)
         self.running = True
         self.processing_thread.start()
 
@@ -125,37 +127,37 @@ class StreamingExample:
         # such as the video resolution
         info = yuv_frame.info()
 
-        height, width = (  # noqa
-            info["raw"]["frame"]["info"]["height"],
-            info["raw"]["frame"]["info"]["width"],
-        )
-        print(yuv_frame.vmeta())
-        # print(self.drone.get_state(HomeChanged))
-        print(self.drone.get_state(GpsLocationChanged))
-        print('ggggggg',self.drone.get_state(GPSFixStateChanged))
-        di = {}
-        # di['lat'] = yuv_frame.vmeta()[1]["camera"]["location"]["latitude"]
-        # di['lon'] = yuv_frame.vmeta()[1]["camera"]["location"]["longitude"]
-        # di['w'] = yuv_frame.vmeta()[1]["camera"]["base_quat"]["w"]
-        # di['x'] = yuv_frame.vmeta()[1]["camera"]["base_quat"]["x"]
-        # di['y'] = yuv_frame.vmeta()[1]["camera"]["base_quat"]["y"]
-        # di['z'] = yuv_frame.vmeta()[1]["camera"]["base_quat"]["z"]
-        # di['alt'] = yuv_frame.vmeta()[1]["camera"]["location"]["altitude_egm96amsl"]
+        # height, width = (  # noqa
+        #     info["raw"]["frame"]["info"]["height"],
+        #     info["raw"]["frame"]["info"]["width"],
+        # )
+        # print(yuv_frame.vmeta())
+        # # print(self.drone.get_state(HomeChanged))
+        # print(self.drone.get_state(GpsLocationChanged))
+        # print('ggggggg',self.drone.get_state(GPSFixStateChanged))
+        # di = {}
+        # # di['lat'] = yuv_frame.vmeta()[1]["camera"]["location"]["latitude"]
+        # # di['lon'] = yuv_frame.vmeta()[1]["camera"]["location"]["longitude"]
+        # # di['w'] = yuv_frame.vmeta()[1]["camera"]["base_quat"]["w"]
+        # # di['x'] = yuv_frame.vmeta()[1]["camera"]["base_quat"]["x"]
+        # # di['y'] = yuv_frame.vmeta()[1]["camera"]["base_quat"]["y"]
+        # # di['z'] = yuv_frame.vmeta()[1]["camera"]["base_quat"]["z"]
+        # # di['alt'] = yuv_frame.vmeta()[1]["camera"]["location"]["altitude_egm96amsl"]
         
-        # print(di)
-        # convert pdraw YUV flag to OpenCV YUV flag
-        cv2_cvt_color_flag = {
-            olympe.VDEF_I420: cv2.COLOR_YUV2BGR_I420,
-            olympe.VDEF_NV12: cv2.COLOR_YUV2BGR_NV12,
-        }[yuv_frame.format()]
-        cv2frame = cv2.cvtColor(yuv_frame.as_ndarray(), cv2_cvt_color_flag)  # noqa
-        frme = imutils.resize(cv2frame,width=400)
-        encoded,buffer = cv2.imencode('.jpg',frme,[cv2.IMWRITE_JPEG_QUALITY,80])
-        frameBytes = buffer.tobytes()
-        encoded_string = base64.b64encode(frameBytes)
-        di['image'] = encoded_string.decode()
-        sock.SendData(json.dumps(di).encode('utf-8'))
-        print("...")
+        # # print(di)
+        # # convert pdraw YUV flag to OpenCV YUV flag
+        # cv2_cvt_color_flag = {
+        #     olympe.VDEF_I420: cv2.COLOR_YUV2BGR_I420,
+        #     olympe.VDEF_NV12: cv2.COLOR_YUV2BGR_NV12,
+        # }[yuv_frame.format()]
+        # cv2frame = cv2.cvtColor(yuv_frame.as_ndarray(), cv2_cvt_color_flag)  # noqa
+        # frme = imutils.resize(cv2frame,width=400)
+        # encoded,buffer = cv2.imencode('.jpg',frme,[cv2.IMWRITE_JPEG_QUALITY,80])
+        # frameBytes = buffer.tobytes()
+        # encoded_string = base64.b64encode(frameBytes)
+        # di['image'] = encoded_string.decode()
+        # sock.SendData(json.dumps(di).encode('utf-8'))
+        # print("...")
         # data = sock.ReadReceivedData() 
         # if data != None: # if NEW data has been received since last ReadReceivedData function call
         #     print(type(data)) # print new received data
@@ -180,7 +182,7 @@ class StreamingExample:
     def fly(self):
        
         print('Streamingggggggggggg')
-        time.sleep(680)
+        time.sleep(60)
         # Takeoff, fly, land, ...
         print("Takeoff if necessary...")
         
