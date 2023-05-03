@@ -190,24 +190,14 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
             Vector3 mousePos = Input.mousePosition;
             if(resList.Count == 1)
             {
-                sendUserInput((int)mousePos.x,(int)mousePos.y);
+                sendUserInput(mousePos.x,mousePos.y);
             // Dictionary<string, string> payload = new Dictionary<string, string>();
             // payload.Add("xpos", mousePos.x.ToString());
             // payload.Add("ypos", mousePos.y.ToString());
             // payload.Add("lat", lat.ToString());
             // payload.Add("alt", alt.ToString());
             // payload.Add("lon", lon.ToString());
-            // // Debug.Log(w);
-            // // Debug.Log(rotat.w);
-            // // Debug.Log("_________________");
-            // // Debug.Log(x);
-            // // Debug.Log(rotat.x);
-            // // Debug.Log("_________________");
-            // // Debug.Log(y);
-            // // Debug.Log(rotat.y);
-            // // Debug.Log("_________________");
-            // // Debug.Log(z);
-            // // Debug.Log(rotat.z);
+            
             // payload.Add("w", w.ToString());
             // payload.Add("x", x.ToString());
             // payload.Add("y", y.ToString());
@@ -266,37 +256,18 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
     {
         Debug.Log("Recording stopped");
         speechRecognizer.StopProcessing();
-        //Microphone.End(Microphone.devices[0]);
-        //byte[] audioData = ConvertAudioClipToByteArray(clip);
-        //// Debug.Log(audioData);
-        //Debug.Log(audioData.Length);
-        //File.WriteAllBytes("C:/Users/rushi/Desktop/Research/PythonUnity/recu1.mp3", audioData);
-        //byte[] audioDat = ConvertAudioClipToBytes(clip);
-        //// Debug.Log(audioData);
-        //Debug.Log(audioDat.Length);
-        //File.WriteAllBytes("C:/Users/rushi/Desktop/Research/PythonUnity/recu.mp3", audioDat);
-        // client2.Send(audioData, audioData.Length, endPoint);
+        
         
     }
 
-    void sendUserInput(int x,int y){
+    void sendUserInput(float x,float y){
         Dictionary<string, string> payload = new Dictionary<string, string>();
             payload.Add("xpos", x.ToString());
             payload.Add("ypos", y.ToString());
             payload.Add("lat", lat.ToString());
             payload.Add("alt", alt.ToString());
             payload.Add("lon", lon.ToString());
-            // Debug.Log(w);
-            // Debug.Log(rotat.w);
-            // Debug.Log("_________________");
-            // Debug.Log(x);
-            // Debug.Log(rotat.x);
-            // Debug.Log("_________________");
-            // Debug.Log(y);
-            // Debug.Log(rotat.y);
-            // Debug.Log("_________________");
-            // Debug.Log(z);
-            // Debug.Log(rotat.z);
+            
             payload.Add("w", w.ToString());
             payload.Add("x", x.ToString());
             payload.Add("y", y.ToString());
