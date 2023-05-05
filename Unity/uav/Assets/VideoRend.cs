@@ -20,7 +20,11 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
     public GameObject obj1;
     public GameObject obj2;
     public GameObject obj3;
+    private GameObject tp ;
+    public List<GameObject> placed_objects = new List<GameObject>();
     public GameObject circle;
+    private float checkalt = 0.0f;
+    private float curscl = 1.0f;
     UdpClient client;
     UdpClient client2;
     IPEndPoint endPoint;
@@ -112,6 +116,17 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
             lat = (float) Convert.ToDouble(values["lat"]);
             lon = (float) Convert.ToDouble(values["lon"]);
             alt = (float) Convert.ToDouble(values["alt"]);
+
+            if(alt - checkalt >10.0f){
+                checkalt = alt;
+                curscl+=0.5f;
+                ScaleObjects(curscl);
+            }
+            if(checkalt - alt > 10.0f){
+                checkalt = alt;
+                curscl-=0.5f;
+                ScaleObjects(curscl);
+            }
             w = (float) Convert.ToDouble(values["w"]);
             x = (float) Convert.ToDouble(values["x"]);
             y = (float) Convert.ToDouble(values["y"]);
@@ -139,7 +154,7 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
             ang.y = yaw;
             ang.z = -1.0f*roll;
 
-            Debug.Log(ang);
+            // Debug.Log(ang);
             float tempv = (float)Math.PI/180;
             float c = (90.0f-ang.x) * tempv;
             float tempang = (float)Math.Cos(c);
@@ -190,29 +205,40 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
             Vector3 mousePos = Input.mousePosition;
             if(resList.Count == 1)
             {
-                sendUserInput(mousePos.x,mousePos.y);
-            // Dictionary<string, string> payload = new Dictionary<string, string>();
-            // payload.Add("xpos", mousePos.x.ToString());
-            // payload.Add("ypos", mousePos.y.ToString());
-            // payload.Add("lat", lat.ToString());
-            // payload.Add("alt", alt.ToString());
-            // payload.Add("lon", lon.ToString());
+                // sendUserInput(mousePos.x,mousePos.y);
+            Dictionary<string, string> payload = new Dictionary<string, string>();
+            payload.Add("xpos", mousePos.x.ToString());
+            payload.Add("ypos", mousePos.y.ToString());
+            payload.Add("lat", lat.ToString());
+            payload.Add("alt", alt.ToString());
+            payload.Add("lon", lon.ToString());
             
-            // payload.Add("w", w.ToString());
-            // payload.Add("x", x.ToString());
-            // payload.Add("y", y.ToString());
-            // payload.Add("z", z.ToString());
-            // payload.Add("resh",canv.GetComponent<RectTransform>().rect.height.ToString());
-            // payload.Add("resw",canv.GetComponent<RectTransform>().rect.width.ToString());
+            payload.Add("w", w.ToString());
+            payload.Add("x", x.ToString());
+            payload.Add("y", y.ToString());
+            payload.Add("z", z.ToString());
+            payload.Add("resh",canv.GetComponent<RectTransform>().rect.height.ToString());
+            payload.Add("resw",canv.GetComponent<RectTransform>().rect.width.ToString());
 
-            // string result = string.Join(",", payload.Select(x => '"' + x.Key + '"' + ": " + '"' + x.Value + '"'));
-            // byte[] data = Encoding.UTF8.GetBytes(result);
-            // client.Send(data, data.Length, endPoint);
+            string result = string.Join(",", payload.Select(x => '"' + x.Key + '"' + ": " + '"' + x.Value + '"'));
+            byte[] data = Encoding.UTF8.GetBytes(result);
+            client.Send(data, data.Length, endPoint);
             }
            
         }
 
     }
+
+    private void ScaleObjects(float scale){
+        Debug.Log("Scaling");
+        Debug.Log(scale);
+        Vector3 scaleChange = new Vector3(scale, scale, scale);
+        foreach(GameObject g in placed_objects){
+            g.transform.localScale = scaleChange;
+        }
+    }
+
+   
 
     private void GreenButton()
     {
@@ -340,20 +366,24 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
 
     private void InstObj(Vector3 wp){
         ang.x = 90;
+        
         if(selectedButton == "green"){
-            Instantiate(obj1,wp, Quaternion.Euler(ang));
-            Instantiate(circle,wp,Quaternion.Euler(ang));
+            tp = obj1;
         }
         else if(selectedButton == "red")
         {
-            Instantiate(obj2,wp, Quaternion.Euler(ang));
-            Instantiate(circle,wp,Quaternion.Euler(ang));
+            tp = obj2;
         }
         else if(selectedButton == "blue")
         {
-            Instantiate(obj3,wp, Quaternion.Euler(ang));
-            Instantiate(circle,wp,Quaternion.Euler(ang));
+            tp = obj3;
         }
+        Instantiate(tp,wp, Quaternion.Euler(ang));
+        GameObject c = Instantiate(circle,wp,Quaternion.Euler(ang));
+        placed_objects.Add(c);
+        Vector3 scaleChange = new Vector3(curscl, curscl, curscl);
+        c.transform.localScale = scaleChange;
+        
     }
 
     private void resetButtons(){

@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 705507994}
-  m_IndirectSpecularColor: {r: 0.18028331, g: 0.2257133, b: 0.3069217, a: 1}
+  m_IndirectSpecularColor: {r: 0.18028378, g: 0.22571412, b: 0.30692285, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -1497,11 +1497,12 @@ MonoBehaviour:
   obj1: {fileID: 1961528569870676102, guid: 8a797e83caf78c199bdc08ce3e135cfc, type: 3}
   obj2: {fileID: 1961528569870676102, guid: 145bd67d869aa455fbb036bc7a68e503, type: 3}
   obj3: {fileID: 1961528569870676102, guid: f6f8c315ab61e34b19292eb84d11babe, type: 3}
+  placed_objects: []
   circle: {fileID: 251463988739871473, guid: f0e6a80386d68c040bf336287c7f3bed, type: 3}
   green: {fileID: 1390461662}
   blue: {fileID: 899146646}
   red: {fileID: 1854664841}
-  sr: {fileID: 0}
+  speechRecognizer: {fileID: 0}
 --- !u!114 &1915456018
 MonoBehaviour:
   m_ObjectHideFlags: 0
