@@ -39,6 +39,8 @@ DRONE_IP = os.environ.get("DRONE_IP", "10.202.0.1")
 # DRONE_IP = os.environ.get("DRONE_IP", "192.168.42.1")
 
 DRONE_RTSP_PORT = os.environ.get("DRONE_RTSP_PORT")
+# sock = U.UdpComms(udpIP="10.0.0.1", portTX=8080, portRX=8001, enableRX=True, suppressWarnings=True)
+# sock2 = U.UdpComms(udpIP="10.0.0.1", portTX=8000, portRX=8002, enableRX=False, suppressWarnings=True)
 sock = U.UdpComms(udpIP="127.0.0.1", portTX=8080, portRX=8001, enableRX=True, suppressWarnings=True)
 sock2 = U.UdpComms(udpIP="127.0.0.1", portTX=8000, portRX=8002, enableRX=False, suppressWarnings=True)
 ct = 0
@@ -130,18 +132,19 @@ class StreamingExample:
         # print(yuv_frame.vmeta())
         
         di = {}
-        di['lat'] = yuv_frame.vmeta()[1]["camera"]["location"]["latitude"]
-        di['lon'] = yuv_frame.vmeta()[1]["camera"]["location"]["longitude"]
-        di['w'] = yuv_frame.vmeta()[1]["camera"]["base_quat"]["w"]
-        di['x'] = yuv_frame.vmeta()[1]["camera"]["base_quat"]["x"]
-        di['y'] = yuv_frame.vmeta()[1]["camera"]["base_quat"]["y"]
-        di['z'] = yuv_frame.vmeta()[1]["camera"]["base_quat"]["z"]
-        di['alt'] = yuv_frame.vmeta()[1]["camera"]["location"]["altitude_egm96amsl"]
+        di['lat'] = yuv_frame.vmeta()[1]["drone"]["location"]["latitude"]
+        di['lon'] = yuv_frame.vmeta()[1]["drone"]["location"]["longitude"]
+        di['w'] = yuv_frame.vmeta()[1]["camera"]["quat"]["w"]
+        di['x'] = yuv_frame.vmeta()[1]["camera"]["quat"]["x"]
+        di['y'] = yuv_frame.vmeta()[1]["camera"]["quat"]["y"]
+        di['z'] = yuv_frame.vmeta()[1]["camera"]["quat"]["z"]
+        di['alt'] = yuv_frame.vmeta()[1]["drone"]["ground_distance"]
         # di['roll'],di['pitch'],di['yaw'] = self.quaternion_to_euler(di['y']*-1.0,di['z']*-1.0,di['w'],di['x'])
         di['roll'],di['pitch'],di['yaw'] = self.quaternion_to_euler(di['w'],di['x'],di['y'],di['z'])
+        print(di['roll'],di['pitch'],di['yaw'])
         di['pitch'] = 180.0 - di['pitch']
         di['roll'] = 180.0 - di['roll']
-        # di['yaw'] = 180.0 + di['yaw']
+        di['yaw'] = di['yaw']+270
         
         print(di['roll'],di['pitch'],di['yaw'])
         # print(di['roll'],di["pitch"],di['yaw'])
@@ -206,12 +209,12 @@ class StreamingExample:
                                   yaw_frame_of_reference = "relative",
                                   yaw = 0.0,
                                   pitch_frame_of_reference = "relative",
-                                  pitch = -45.0,
+                                  pitch = -85.0,
                                   roll_frame_of_reference = "relative",
                                   roll = 0.0
                                 ) ).wait()
         self.drone(moveBy(0,0,-50,0,_timeout=1000)).wait().success()
-        time.sleep(30)
+        # time.sleep(30)
         # self.drone(moveBy(80,0,0,0,_timeout=100)).wait().success()
         # self.drone(moveBy(0,60,0,0,_timeout=100)).wait().success()
         # self.drone(moveBy(-80,0,0,0,_timeout=100)).wait().success()

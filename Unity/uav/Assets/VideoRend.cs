@@ -151,7 +151,7 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
             }
             
             ang.x = -1.0f*pitch;
-            ang.y = yaw;
+            ang.y = -1.0f*yaw;
             ang.z = -1.0f*roll;
 
             // Debug.Log(ang);
