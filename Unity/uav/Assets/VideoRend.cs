@@ -131,6 +131,16 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
             x = (float) Convert.ToDouble(values["x"]);
             y = (float) Convert.ToDouble(values["y"]);
             z = (float) Convert.ToDouble(values["z"]);
+
+            var drone_x = (float) Convert.ToDouble(values["drone_x"]);
+            var drone_y = (float) Convert.ToDouble(values["drone_y"]);
+            var drone_z = (float) Convert.ToDouble(values["drone_z"]);
+
+            var world_pos = GPSEncoder.GPSToUCS(lat,lon);
+            world_pos.y = -1.0f*drone_z;
+            // world_pos.x = 1.0f*drone_x;
+            // world_pos.z = 1.0f*drone_y;
+
             pitch = (float) Convert.ToDouble(values["pitch"]);
             roll = (float) Convert.ToDouble(values["roll"]);
             yaw = (float) Convert.ToDouble(values["yaw"]);
@@ -149,21 +159,23 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
                 Debug.Log("Object placed");
                 Po = false;
             }
-            var world_pos = GPSEncoder.GPSToUCS(lat,lon);
-            world_pos.y =alt;
+            
             
            
             
-            ang.x = -1.0f*pitch;
-            ang.y = -1.0f*yaw;
-            ang.z = -1.0f*roll;
+
+            ang.x = pitch;
+            ang.y = yaw;
+            ang.z = roll;
 
             // Debug.Log(ang);
             float tempv = (float)Math.PI/180;
             float c = (90.0f-ang.x) * tempv;
             float tempang = (float)Math.Cos(c);
             float ht = alt/tempang;
-            canv.planeDistance = ht+1;
+            canv.planeDistance = ht+4;
+
+            
             rotat = Quaternion.Euler(ang);
             // Debug.Log(rotat);
             drone.transform.rotation = rotat;

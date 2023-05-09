@@ -8,16 +8,18 @@ import imutils
 import json
 import pandas as pd
 import GeoCoordinationHandler as GC
+import math
+from pyquaternion import Quaternion
 # Create UDP socket to use for sending (and receiving)
 sock = U.UdpComms(udpIP="127.0.0.1", portTX=8080, portRX=8001, enableRX=True, suppressWarnings=True)
 sock2 = U.UdpComms(udpIP="127.0.0.1", portTX=8000, portRX=8002, enableRX=True, suppressWarnings=True)
-cam = cv2.VideoCapture('streaming_real.mp4')
+cam = cv2.VideoCapture('streaming_90.mp4')
 i = 1
 lat = 50
 lon = 50
 alt = 40
 
-df = pd.read_csv('metadata_real.csv')
+df = pd.read_csv('metadata_90.csv')
 
 
 import numpy as np
@@ -42,6 +44,7 @@ def quaternion_to_euler(w, x, y, z):
 
     return X, Y, Z
 
+
 while True:
     ret,camImage = cam.read()
 
@@ -63,16 +66,56 @@ while True:
         data['lat'] = di['drone/location/latitude']
         data['lon'] =di['drone/location/longitude']
         data['alt'] = di['drone/ground_distance']
-        data['w'] = di['camera/quat/w']
+
+        data['drone_x'] = di['drone/local_position/x']
+        data['drone_y'] = di['drone/local_position/y']
+        data['drone_z'] = di['drone/local_position/z']
+
+        
+        # Unreal Quat Values - Camera
+        # data['w'] = di['camera/quat/w'] * di['drone/quat/w'] 
+        # data ['x'] =di['camera/quat/x'] * di['drone/quat/x'] 
+        # data ['y'] =di['camera/quat/y'] * di['drone/quat/y'] 
+        # data ['z'] =di['camera/quat/z'] * di['drone/quat/z'] 
+
+         # Unreal Quat Values - Camera
+        data['w'] = di['camera/quat/w'] 
         data ['x'] =di['camera/quat/x']
         data ['y'] =di['camera/quat/y']
         data ['z'] =di['camera/quat/z']
-        data['roll'],data['pitch'],data['yaw'] = quaternion_to_euler(data['w'],data['x'],data['y'],data['z'])
-        print(data['roll'],data['pitch'],data['yaw'])
-        data['pitch'] = 180.0 - data['pitch']
-        data['roll'] = 180.0 - data['roll']
-        data['yaw'] = data['yaw']+270
-        print(data['roll'],data['pitch'],data['yaw'])
+
+       
+        unreal_camera_quat = Quaternion(data['w'],data['x'],data['y'],data['z'])
+        unity_camera_quat = Quaternion()
+
+        # Unreal to Unity Rotation Conversion
+        # Step 1 : 90 degree counter clockwise along the z axis. 
+        z_axis = [0,0,-1]
+        z_rotation = Quaternion(axis=z_axis, angle=np.pi/2)  # 90 degree rotation around z-axis
+        unity_camera_quat = z_rotation * unreal_camera_quat
+
+        # Step 2:  rotate it by 90 degree counter clockwise along the x axis
+        x_axis = [-1,0,0] 
+        x_rotation = Quaternion(axis=x_axis, angle=np.pi/2)
+        unity_camera_quat = x_rotation * unity_camera_quat
+
+        data['pitch'],data['yaw'],data['roll'] = quaternion_to_euler(unity_camera_quat.w, unity_camera_quat.w, unity_camera_quat.y, unity_camera_quat.z)
+
+        
+
+        # Transform Unreal Quat in to Unreal Euler
+
+        # data['roll'],data['pitch'],data['yaw'] = quaternion_to_euler(data['w'],data['x'],data['y'],data['z'])
+        # print("Unreal Pitch and Yaw are".format(data['roll'],data['pitch'],data['yaw']))
+        
+
+        # Euler Roll pitch yaw
+        data['pitch'] = data['pitch']
+        data['roll'] = data['roll']
+        data['yaw'] =  data['yaw']
+
+
+        #print(data['roll'],data['pitch'],data['yaw'])
         # print(di)
     
         sock.SendData(json.dumps(data).encode('utf-8')) # Send this string to other application
