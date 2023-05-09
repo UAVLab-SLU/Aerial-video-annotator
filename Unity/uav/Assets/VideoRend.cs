@@ -141,14 +141,18 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
                 texture.LoadImage(result);
                 image.texture = texture;
             }
-            var world_pos = GPSEncoder.GPSToUCS(lat,lon);
-            world_pos.y =alt;
-            
-            if(Po){
-                InstObj(world_pos);
+            if (Po)
+            {
+                GPSEncoder.SetLocalOrigin(new Vector2(lat, lon));
+                var world_p = GPSEncoder.GPSToUCS(lat, lon);
+                InstObj(world_p);
                 Debug.Log("Object placed");
                 Po = false;
             }
+            var world_pos = GPSEncoder.GPSToUCS(lat,lon);
+            world_pos.y =alt;
+            
+           
             
             ang.x = -1.0f*pitch;
             ang.y = -1.0f*yaw;
@@ -379,10 +383,10 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
             tp = obj3;
         }
         Instantiate(tp,wp, Quaternion.Euler(ang));
-        GameObject c = Instantiate(circle,wp,Quaternion.Euler(ang));
-        placed_objects.Add(c);
-        Vector3 scaleChange = new Vector3(curscl, curscl, curscl);
-        c.transform.localScale = scaleChange;
+        //GameObject c = Instantiate(circle,wp,Quaternion.Euler(ang));
+        //placed_objects.Add(c);
+        //Vector3 scaleChange = new Vector3(curscl, curscl, curscl);
+        //c.transform.localScale = scaleChange;
         
     }
 

@@ -83,7 +83,7 @@ public sealed class GPSEncoder {
 	#endregion
 	
 	#region Instance Variables
-	private Vector2 _localOrigin = new Vector2(48.8f,2.3f);
+	private Vector2 _localOrigin = new Vector2(0.0f,0.0f);
 	private float _LatOrigin { get{ return _localOrigin.x; }}	
 	private float _LonOrigin { get{ return _localOrigin.y; }}
 
