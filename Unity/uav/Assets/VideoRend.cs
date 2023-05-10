@@ -227,9 +227,11 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
             if(resList.Count == 1)
             {
                 // sendUserInput(mousePos.x,mousePos.y);
+
             Dictionary<string, string> payload = new Dictionary<string, string>();
+            var mouse_y = canv.GetComponent<RectTransform>().rect.height - mousePos.y;
             payload.Add("xpos", mousePos.x.ToString());
-            payload.Add("ypos", mousePos.y.ToString());
+            payload.Add("ypos", mouse_y.ToString());
             payload.Add("lat", lat.ToString());
             payload.Add("alt", alt.ToString());
             payload.Add("lon", lon.ToString());
@@ -243,6 +245,7 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
             payload.Add("resw",canv.GetComponent<RectTransform>().rect.width.ToString());
 
             string result = string.Join(",", payload.Select(x => '"' + x.Key + '"' + ": " + '"' + x.Value + '"'));
+            Debug.Log(result);
             byte[] data = Encoding.UTF8.GetBytes(result);
             client.Send(data, data.Length, endPoint);
             }
