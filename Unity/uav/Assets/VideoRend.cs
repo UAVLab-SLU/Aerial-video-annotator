@@ -132,14 +132,15 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
             y = (float) Convert.ToDouble(values["y"]);
             z = (float) Convert.ToDouble(values["z"]);
 
-            var drone_x = (float) Convert.ToDouble(values["drone_x"]);
-            var drone_y = (float) Convert.ToDouble(values["drone_y"]);
-            var drone_z = (float) Convert.ToDouble(values["drone_z"]);
+            // var drone_x = (float) Convert.ToDouble(values["drone_x"]);
+            // var drone_y = (float) Convert.ToDouble(values["drone_y"]);
+            // var drone_z = (float) Convert.ToDouble(values["drone_z"]);
 
             var world_pos = GPSEncoder.GPSToUCS(lat,lon);
-            world_pos.y = -1.0f*drone_z;
-            // world_pos.x = 1.0f*drone_x;
-            // world_pos.z = 1.0f*drone_y;
+            world_pos.y = alt;
+            // var temp = world_pos.x;
+            // world_pos.x = -1.0f*world_pos.z;
+            // world_pos.z = temp;
 
             pitch = (float) Convert.ToDouble(values["pitch"]);
             roll = (float) Convert.ToDouble(values["roll"]);
@@ -199,6 +200,10 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
             alt2 =  (float) Convert.ToDouble(values2["alt"]);
             var world_pos2 = GPSEncoder.GPSToUCS(lat2,lon2);
             world_pos2.y =1.0f;
+            // var  temp = world_pos2.x;
+            world_pos2.x = 1.0f*world_pos2.x;
+            world_pos2.z = 1.0f*world_pos2.z;
+            Debug.Log(world_pos2);
             InstObj(world_pos2);
 
         }
@@ -229,6 +234,7 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
             payload.Add("alt", alt.ToString());
             payload.Add("lon", lon.ToString());
             
+            
             payload.Add("w", w.ToString());
             payload.Add("x", x.ToString());
             payload.Add("y", y.ToString());
@@ -244,6 +250,8 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
         }
 
     }
+
+
 
     private void ScaleObjects(float scale){
         Debug.Log("Scaling");
@@ -407,4 +415,6 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
         green.interactable=true;
         blue.interactable=true;
     }
+
+
 }

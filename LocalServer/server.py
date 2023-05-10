@@ -13,13 +13,13 @@ from pyquaternion import Quaternion
 # Create UDP socket to use for sending (and receiving)
 sock = U.UdpComms(udpIP="127.0.0.1", portTX=8080, portRX=8001, enableRX=True, suppressWarnings=True)
 sock2 = U.UdpComms(udpIP="127.0.0.1", portTX=8000, portRX=8002, enableRX=True, suppressWarnings=True)
-cam = cv2.VideoCapture('streaming_90.mp4')
+cam = cv2.VideoCapture('streaming_70.mp4')
 i = 1
 lat = 50
 lon = 50
 alt = 40
 
-df = pd.read_csv('metadata_90.csv')
+df = pd.read_csv('metadata_70.csv')
 
 
 import numpy as np
@@ -67,9 +67,9 @@ while True:
         data['lon'] =di['drone/location/longitude']
         data['alt'] = di['drone/ground_distance']
 
-        data['drone_x'] = di['drone/local_position/x']
-        data['drone_y'] = di['drone/local_position/y']
-        data['drone_z'] = di['drone/local_position/z']
+        # data['drone_x'] = di['drone/local_position/x']
+        # data['drone_y'] = di['drone/local_position/y']
+        # data['drone_z'] = di['drone/local_position/z']
 
         
         # Unreal Quat Values - Camera
@@ -86,6 +86,12 @@ while True:
 
        
         unreal_camera_quat = Quaternion(data['w'],data['x'],data['y'],data['z'])
+        # unreal_ned_quat_drone = Quaternion(float(di['drone/quat/w']),
+        #                                        float(di['drone/quat/x']),
+        #                                        float(di['drone/quat/y']),
+        #                                        float(di['drone/quat/z']))
+        
+        # unreal_camera_final_quat = unreal_ned_quat_drone * unreal_camera_quat * unreal_ned_quat_drone.inverse
         unity_camera_quat = Quaternion()
 
         # Unreal to Unity Rotation Conversion
@@ -99,8 +105,16 @@ while True:
         x_rotation = Quaternion(axis=x_axis, angle=np.pi/2)
         unity_camera_quat = x_rotation * unity_camera_quat
 
-        data['pitch'],data['yaw'],data['roll'] = quaternion_to_euler(unity_camera_quat.w, unity_camera_quat.w, unity_camera_quat.y, unity_camera_quat.z)
+        # data['w'] = unity_camera_quat.x
+        # data ['x'] =unity_camera_quat.y
+        # data ['y'] =unity_camera_quat.z
+        # data ['z'] =unity_camera_quat.w
 
+        data['pitch'],data['yaw'],data['roll'] = quaternion_to_euler(unity_camera_quat.w, unity_camera_quat.w, unity_camera_quat.y, unity_camera_quat.z)
+        data['w'] = unity_camera_quat.w
+        data ['x'] =unity_camera_quat.x
+        data ['y'] =unity_camera_quat.y
+        data ['z'] =unity_camera_quat.z
         
 
         # Transform Unreal Quat in to Unreal Euler
@@ -130,13 +144,38 @@ while True:
             print(dat)
             dat = "{"+dat+"}"
             dat = json.loads(dat)
-            c = GC.CameraRayProjection(69,[float(dat["lat"]),float(dat["lon"]),float(dat["alt"])],[int(float(dat["resw"])),int(float(dat["resh"]))],GC.Coordinates(int(float(dat["xpos"])),int(float(dat["ypos"]))),[float(dat["w"]),float(dat["x"]), float(dat["y"]), float(dat["z"])])
+
+            # Convert NED Unreal Quaternion ENU Quaternion
+            cam_final_quat = Quaternion(float(dat["w"]),float(dat["x"]), float(dat["y"]), float(dat["z"]))
+            # unreal_ned_quat_drone = Quaternion(float(di['drone/quat/w']),
+            #                                    float(di['drone/quat/x']),
+            #                                    float(di['drone/quat/y']),
+            #                                    float(di['drone/quat/z']))
+            # cam_final_quat = unreal_ned_quat_drone * unreal_ned_quat_camers
+            # TODO
+            # Add Quaterion of Drone
+
+            
+            # rot_ned_enu = Quaternion(axis=[0, 0, 1], angle=180)
+            cam_final_quat = cam_final_quat.rotate(Quaternion(vector=[0, 0, -1]))
+            # unreal_enu_quat = unreal_ned_quat * Quaternion(axis=[0,0,1], angle=0)
+            # # unreal_enu_quat = unreal_ned_quat * rot_ned_enu
+            # unreal_enu_quat = unreal_enu_quat * Quaternion(axis=[1,0,0], angle=30)
+
+            c = GC.CameraRayProjection(69,[float(dat["lat"]),float(dat["lon"]),float(dat["alt"])],
+                                       [int(float(dat["resw"])),int(float(dat["resh"]))],
+                                    
+                                       GC.Coordinates(int(float(dat["xpos"])),int(float(dat["ypos"]))),
+                                    #    [float(unreal_enu_quat["w"]),float(unreal_enu_quat["x"]), float(unreal_enu_quat["y"]), float(unreal_enu_quat["z"])]
+                                    [cam_final_quat.w,cam_final_quat.x,cam_final_quat.y,cam_final_quat.z])
             target_direction_ENU = c.target_ENU()
             target_direction_ECEF = c.ENU_to_ECEF(target_direction_ENU)
             intersect_ECEF = c.target_location(target_direction_ECEF)
-            #print("Intersect ECEF", intersect_ECEF.x,intersect_ECEF.y,intersect_ECEF.z)
+            
             intersect_LLA = c.ECEFtoLLA(intersect_ECEF.x,intersect_ECEF.y,intersect_ECEF.z)
+            print(c.LLAtoXYZ(intersect_LLA[0], intersect_LLA[1], intersect_LLA[2]))
             print(intersect_LLA)
+            
             di2 = {
                 'lat' : str(intersect_LLA[0]),
                 'lon' : str(intersect_LLA[1]),
