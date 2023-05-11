@@ -179,6 +179,27 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
             
             rotat = Quaternion.Euler(ang);
             // Debug.Log(rotat);
+            // rotat = new Quaternion(x,z,y,w);
+            // rotat = new Quaternion(x,y,z,w);
+            // rotat = new Quaternion(y,x,z,w); 
+            // -70 0 -130
+            // rotat = new Quaternion(y,z,x,w);
+            // -70 -130 0
+            // rotat = new Quaternion(x,z,y,w);
+            // rotat = new Quaternion(z,x,y,w);
+            // rotat = new Quaternion(z,y,x,w);
+
+            rotat = new Quaternion(-y,z,-x,w);
+            // 70 -130 0
+
+            // rotat = new Quaternion(-y,-z,x,w);
+            // 70 -130 0
+
+            // X = 70 Y = 40 Z = 90
+            // W Y Z  -20 90 130
+            // w z y x  -20 130 90  (90-20, 90+40, 90) - Most accurate so far
+
+                        
             drone.transform.rotation = rotat;
             // Debug.Log(ang);
             drone.transform.position = world_pos; 
@@ -237,10 +258,16 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
             payload.Add("lon", lon.ToString());
             
             
-            payload.Add("w", w.ToString());
-            payload.Add("x", x.ToString());
-            payload.Add("y", y.ToString());
-            payload.Add("z", z.ToString());
+            // payload.Add("w", w.ToString());
+            // payload.Add("x", x.ToString());
+            // payload.Add("y", y.ToString());
+            // payload.Add("z", z.ToString());
+
+            payload.Add("w", rotat.w.ToString());
+            payload.Add("x", rotat.x.ToString());
+            payload.Add("y", rotat.y.ToString());
+            payload.Add("z", rotat.z.ToString());
+
             payload.Add("resh",canv.GetComponent<RectTransform>().rect.height.ToString());
             payload.Add("resw",canv.GetComponent<RectTransform>().rect.width.ToString());
 
