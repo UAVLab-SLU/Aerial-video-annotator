@@ -44,6 +44,23 @@ def quaternion_to_euler(w, x, y, z):
 
     return X, Y, Z
 
+def ned_to_enu_quaternion(ned_quat):
+    # NED to ENU conversion matrix
+    conversion_matrix = np.array([[0, 1, 0, 0],
+                                  [1, 0, 0, 0],
+                                  [0, 0, -1, 0],
+                                  [0, 0, 0, 1]])
+    
+    # Convert quaternion to a 4x1 matrix
+    ned_quat_matrix = np.array([ned_quat[0], ned_quat[1], ned_quat[2], ned_quat[3]]).reshape(4, 1)
+    
+    # Perform the conversion: ENU = Conversion_Matrix * NED
+    enu_quat_matrix = np.dot(conversion_matrix, ned_quat_matrix)
+    
+    # Convert the resulting 4x1 matrix back to a quaternion
+    enu_quat = enu_quat_matrix.flatten()
+    
+    return enu_quat
 
 while True:
     ret,camImage = cam.read()
@@ -96,12 +113,12 @@ while True:
 
         # Unreal to Unity Rotation Conversion
         # Step 1 : 90 degree counter clockwise along the z axis. 
-        z_axis = [0,0,-1]
+        z_axis = [0,0,1]
         z_rotation = Quaternion(axis=z_axis, angle=np.pi/2)  # 90 degree rotation around z-axis
         unity_camera_quat = z_rotation * unreal_camera_quat
 
         # Step 2:  rotate it by 90 degree counter clockwise along the x axis
-        x_axis = [-1,0,0] 
+        x_axis = [1,0,0] 
         x_rotation = Quaternion(axis=x_axis, angle=np.pi/2)
         unity_camera_quat = x_rotation * unity_camera_quat
 
@@ -111,10 +128,13 @@ while True:
         # data ['z'] =unity_camera_quat.w
 
         data['pitch'],data['yaw'],data['roll'] = quaternion_to_euler(unity_camera_quat.w, unity_camera_quat.w, unity_camera_quat.y, unity_camera_quat.z)
-        data['w'] = unity_camera_quat.w
-        data ['x'] =unity_camera_quat.x
-        data ['y'] =unity_camera_quat.y
-        data ['z'] =unity_camera_quat.z
+        
+        # data['w'] = unity_camera_quat.w
+        # data ['x'] =unity_camera_quat.x
+        # data ['y'] =unity_camera_quat.y
+        # data ['z'] =unity_camera_quat.z
+
+    
         
 
         # Transform Unreal Quat in to Unreal Euler
@@ -146,28 +166,28 @@ while True:
             dat = json.loads(dat)
 
             # Convert NED Unreal Quaternion ENU Quaternion
-            cam_final_quat = Quaternion(float(dat["w"]),float(dat["x"]), float(dat["y"]), float(dat["z"]))
-            # unreal_ned_quat_drone = Quaternion(float(di['drone/quat/w']),
-            #                                    float(di['drone/quat/x']),
-            #                                    float(di['drone/quat/y']),
-            #                                    float(di['drone/quat/z']))
-            # cam_final_quat = unreal_ned_quat_drone * unreal_ned_quat_camers
-            # TODO
-            # Add Quaterion of Drone
+            ned_w= float(dat["w"])
+            ned_x = float(dat["x"])
+            ned_y = float(dat["y"])
+            ned_z = float(dat["z"])
 
+            cam_final_quat = Quaternion(ned_w,ned_z,ned_x,ned_y)
             
-            # rot_ned_enu = Quaternion(axis=[0, 0, 1], angle=180)
-            cam_final_quat = cam_final_quat.rotate(Quaternion(vector=[0, 0, -1]))
-            # unreal_enu_quat = unreal_ned_quat * Quaternion(axis=[0,0,1], angle=0)
-            # # unreal_enu_quat = unreal_ned_quat * rot_ned_enu
-            # unreal_enu_quat = unreal_enu_quat * Quaternion(axis=[1,0,0], angle=30)
+            
+
+            # cam_final_quat = cam_final_quat.rotate(Quaternion(vector=[0, 0, -1]))
+            
+            # cam_final_quat = ned_to_enu_quaternion([cam_final_quat.w, cam_final_quat.x,cam_final_quat.y , cam_final_quat.z ])
+
+
+
 
             c = GC.CameraRayProjection(69,[float(dat["lat"]),float(dat["lon"]),float(dat["alt"])],
                                        [int(float(dat["resw"])),int(float(dat["resh"]))],
                                     
                                        GC.Coordinates(int(float(dat["xpos"])),int(float(dat["ypos"]))),
                                     #    [float(unreal_enu_quat["w"]),float(unreal_enu_quat["x"]), float(unreal_enu_quat["y"]), float(unreal_enu_quat["z"])]
-                                    [cam_final_quat.w,cam_final_quat.x,cam_final_quat.y,cam_final_quat.z])
+                                    [cam_final_quat[0],cam_final_quat[1],cam_final_quat[2],cam_final_quat[3]])
             target_direction_ENU = c.target_ENU()
             target_direction_ECEF = c.ENU_to_ECEF(target_direction_ENU)
             intersect_ECEF = c.target_location(target_direction_ECEF)
