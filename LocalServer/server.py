@@ -13,13 +13,13 @@ from pyquaternion import Quaternion
 # Create UDP socket to use for sending (and receiving)
 sock = U.UdpComms(udpIP="127.0.0.1", portTX=8080, portRX=8001, enableRX=True, suppressWarnings=True)
 sock2 = U.UdpComms(udpIP="127.0.0.1", portTX=8000, portRX=8002, enableRX=True, suppressWarnings=True)
-cam = cv2.VideoCapture('streaming_70.mp4')
+cam = cv2.VideoCapture('Samples/mov_2.mp4')
 i = 1
 lat = 50
 lon = 50
 alt = 40
 
-df = pd.read_csv('metadata_70.csv')
+df = pd.read_csv('Samples/mov_2.csv')
 
 
 import numpy as np
@@ -171,7 +171,19 @@ while True:
             ned_y = float(dat["y"])
             ned_z = float(dat["z"])
 
-            cam_final_quat = Quaternion(ned_w,ned_z,ned_x,ned_y)
+            # VIRTUAL DRONE
+            # cam_final_quat = Quaternion(ned_w,ned_z,ned_x,ned_y)
+
+
+            # cam_final_quat = Quaternion(-ned_x,ned_z,ned_y,ned_w)
+            # cam_final_quat = Quaternion(-ned_x,ned_y,-ned_z,ned_w)
+            # cam_final_quat = Quaternion(-ned_y,ned_z,-ned_x,ned_w)
+            
+            # REAL DRONE
+            cam_final_quat = Quaternion(ned_w,ned_y,ned_z,ned_x)
+
+
+            # Quaternion(-y,z,-x,w);
             
             
 
@@ -185,7 +197,7 @@ while True:
             c = GC.CameraRayProjection(69,[float(dat["lat"]),float(dat["lon"]),float(dat["alt"])],
                                        [int(float(dat["resw"])),int(float(dat["resh"]))],
                                     
-                                       GC.Coordinates(int(float(dat["xpos"])),int(float(dat["ypos"]))),
+                                       GC.Coordinates(int(float(dat["ypos"])),int(float(dat["xpos"]))),
                                     #    [float(unreal_enu_quat["w"]),float(unreal_enu_quat["x"]), float(unreal_enu_quat["y"]), float(unreal_enu_quat["z"])]
                                     [cam_final_quat[0],cam_final_quat[1],cam_final_quat[2],cam_final_quat[3]])
             target_direction_ENU = c.target_ENU()
@@ -194,7 +206,7 @@ while True:
             
             intersect_LLA = c.ECEFtoLLA(intersect_ECEF.x,intersect_ECEF.y,intersect_ECEF.z)
             print(c.LLAtoXYZ(intersect_LLA[0], intersect_LLA[1], intersect_LLA[2]))
-            print(intersect_LLA)
+            print("CALCULATED LOCATION IS",intersect_LLA)
             
             di2 = {
                 'lat' : str(intersect_LLA[0]),
