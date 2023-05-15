@@ -13,13 +13,13 @@ from pyquaternion import Quaternion
 # Create UDP socket to use for sending (and receiving)
 sock = U.UdpComms(udpIP="127.0.0.1", portTX=8080, portRX=8001, enableRX=True, suppressWarnings=True)
 sock2 = U.UdpComms(udpIP="127.0.0.1", portTX=8000, portRX=8002, enableRX=True, suppressWarnings=True)
-cam = cv2.VideoCapture('Samples/mov_2.mp4')
+cam = cv2.VideoCapture('Samples/north_1.mp4')
 i = 1
 lat = 50
 lon = 50
 alt = 40
 
-df = pd.read_csv('Samples/mov_2.csv')
+df = pd.read_csv('Samples/north_1.csv')
 
 
 import numpy as np
@@ -127,7 +127,7 @@ while True:
         # data ['y'] =unity_camera_quat.z
         # data ['z'] =unity_camera_quat.w
 
-        data['pitch'],data['yaw'],data['roll'] = quaternion_to_euler(unity_camera_quat.w, unity_camera_quat.w, unity_camera_quat.y, unity_camera_quat.z)
+        data['roll'],data['pitch'],data['yaw'] = quaternion_to_euler(data['w'],data['x'],data['y'],data['z'])
         
         # data['w'] = unity_camera_quat.w
         # data ['x'] =unity_camera_quat.x
@@ -149,7 +149,7 @@ while True:
         data['yaw'] =  data['yaw']
 
 
-        #print(data['roll'],data['pitch'],data['yaw'])
+        print(data['roll'],data['pitch'],data['yaw'])
         # print(di)
     
         sock.SendData(json.dumps(data).encode('utf-8')) # Send this string to other application

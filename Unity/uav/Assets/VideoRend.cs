@@ -165,16 +165,29 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
            
             
 
-            ang.x = pitch;
+            ang.x = -1.0f*pitch;
             ang.y = yaw;
             ang.z = roll;
 
-            // Debug.Log(ang);
+            Debug.Log(ang);
             float tempv = (float)Math.PI/180;
+            if(ang.x>90.0f){
+                ang.x = ang.x%90.0f;
+            }
+            if(ang.x<0.0f){
+                ang.x = ang.x*-1.0f;
+            }
+            Debug.Log(ang.x);
             float c = (90.0f-ang.x) * tempv;
             float tempang = (float)Math.Cos(c);
             float ht = alt/tempang;
+            // Debug.Log(alt);
+            // Debug.Log(ht);
+            if(ht<0.0f){
+                ht = -1.0f* ht;
+            }
             canv.planeDistance = ht+4;
+            // Debug.Log(canv.planeDistance);
 
             
             rotat = Quaternion.Euler(ang);
