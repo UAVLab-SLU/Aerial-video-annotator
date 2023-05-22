@@ -149,12 +149,28 @@ class CameraRayProjection:
     Params: QuaternionTuple containing information about the drone's current orientation in ENU.
     Return: Homogeneous rotation matrix for ENU.
     '''
+    # def transformation_ENU(self)->np.array:
+    #     R = transformations.quaternion_matrix(self.quaternion)
+    #     new_array = np.array(R)
+    #     new_array = np.delete(new_array,obj=3,axis=0)
+    #     transformation_matrix = np.delete(new_array,obj=3,axis=1)
+    #     return transformation_matrix
+    
     def transformation_ENU(self)->np.array:
         R = transformations.quaternion_matrix(self.quaternion)
         new_array = np.array(R)
         new_array = np.delete(new_array,obj=3,axis=0)
-        transformation_matrix = np.delete(new_array,obj=3,axis=1)
-        return transformation_matrix
+        transformation_matrix_NED = np.delete(new_array,obj=3,axis=1)
+        
+        NED_to_ENU = np.array([[0, 1, 0], [1, 0, 0], [0, 0, -1]])
+        transformation_matrix_ENU = NED_to_ENU @ transformation_matrix_NED
+
+        # rot = np.array([[-1, 0, 0], [0, -1, 0], [0, 0, 1]])
+        # # rotd = np.dot(transformation_matrix_ENU, rot)
+        # rotd = rot @ transformation_matrix_ENU 
+
+        return transformation_matrix_ENU
+    
 
     '''
     Transformations from :
@@ -194,7 +210,7 @@ class CameraRayProjection:
         new_x = (x-center_x if x >= center_x else -(center_x-x))
         new_y = (center_y - y if y <= center_y else -(y-center_y))
         image_coors = Coordinates(new_x,new_y)
-        return (image_coors.x,image_coors.y)
+        return (image_coors.x*-1,image_coors.y*-1)
 
     '''
     Return: Column Vector of pixel direction from camera origin.
