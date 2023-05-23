@@ -13,13 +13,13 @@ from pyquaternion import Quaternion
 # Create UDP socket to use for sending (and receiving)
 sock = U.UdpComms(udpIP="127.0.0.1", portTX=8080, portRX=8001, enableRX=True, suppressWarnings=True)
 sock2 = U.UdpComms(udpIP="127.0.0.1", portTX=8000, portRX=8002, enableRX=True, suppressWarnings=True)
-cam = cv2.VideoCapture('Samples/north_1.mp4')
+cam = cv2.VideoCapture('Samples/mov_1.mp4')
 i = 1
 lat = 50
 lon = 50
 alt = 40
 
-df = pd.read_csv('Samples/north_1.csv')
+df = pd.read_csv('Samples/mov_1.csv')
 
 
 import numpy as np
@@ -196,10 +196,10 @@ while True:
 
             c = GC.CameraRayProjection(69,[float(dat["lat"]),float(dat["lon"]),float(dat["alt"])],
                                        [int(float(dat["resw"])),int(float(dat["resh"]))],
-                                    
-                                       GC.Coordinates(int(float(dat["ypos"])),int(float(dat["xpos"]))),
-                                    #    [float(unreal_enu_quat["w"]),float(unreal_enu_quat["x"]), float(unreal_enu_quat["y"]), float(unreal_enu_quat["z"])]
-                                    [cam_final_quat[0],cam_final_quat[1],cam_final_quat[2],cam_final_quat[3]])
+                                       GC.Coordinates(int(float(dat["xpos"])),int(float(dat["ypos"]))),
+                                       
+                                    [data['w'],data['x'],data['y'],data['z']])
+            
             target_direction_ENU = c.target_ENU()
             target_direction_ECEF = c.ENU_to_ECEF(target_direction_ENU)
             intersect_ECEF = c.target_location(target_direction_ECEF)
