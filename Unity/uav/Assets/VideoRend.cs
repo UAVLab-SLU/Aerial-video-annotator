@@ -23,6 +23,12 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
     private GameObject tp ;
     public List<GameObject> placed_objects = new List<GameObject>();
     public GameObject circle;
+
+    public RawImage grid;
+    public Texture2D grid2;
+    public Texture2D grid3;
+    public Texture2D grid4;
+    public Texture2D grid5;
     private float checkalt = 0.0f;
     private float curscl = 1.0f;
     UdpClient client;
@@ -30,6 +36,8 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
     IPEndPoint endPoint;
     public GPSEncoder GE;
     private int count;
+
+    private int curgrid;
 
 
     float lat = 0.0f;
@@ -70,6 +78,10 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
         blue.onClick.AddListener(BlueButton);
         red.onClick.AddListener(RedButton);
         
+        curgrid = 1;
+        SetGrid();
+       
+
         selectedButton = "green";
         green.interactable=false;
         Po = true;
@@ -83,8 +95,8 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
         // Set paths to language models.
         languageModelProvider.languageModels = new List<StreamingAssetsLanguageModel>
         {
-        new() {language = SystemLanguage.English, path = "LanguageModels/en-US"},
-        new() {language = SystemLanguage.French, path = "LanguageModels/fr-FR"}
+        // new() {language = SystemLanguage.English, path = "LanguageModels/en-IND"},
+        new() {language = SystemLanguage.English, path = "LanguageModels/en-US3"},
         };
         // Setup microphone speech source. The default settings can be left unchanged, but we will do it as an example.
         speechSource.DeviceName = null;
@@ -94,7 +106,15 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
         speechRecognizer.SpeechSource = speechSource;
         // Handle events.
         speechRecognizer.ResultReady.AddListener(OnResult);
-
+        speechRecognizer.Vocabulary = new List<string>
+        {
+            "one", "two", "three", "four", "five",
+            "six", "seven", "eight", "nine", "ten",
+            "eleven", "twelve", "thirteen", "fourteen", "fifteen",
+            "sixteen", "seventeen", "eighteen", "nineteen", "twenty",
+            "twenty-one", "twenty-two", "twenty-three", "twenty-four", "twenty-five",
+            "grid", "green", "blue", "red"
+        };
 
     }
 
@@ -120,11 +140,15 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
             if(alt - checkalt >10.0f){
                 checkalt = alt;
                 curscl+=0.5f;
+                curgrid+=1;
+                SetGrid();
                 ScaleObjects(curscl);
             }
             if(checkalt - alt > 10.0f){
                 checkalt = alt;
                 curscl-=0.5f;
+                curgrid-=1;
+                SetGrid();
                 ScaleObjects(curscl);
             }
             w = (float) Convert.ToDouble(values["w"]);
@@ -190,27 +214,8 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
             // Debug.Log(canv.planeDistance);
 
             
-            rotat = Quaternion.Euler(ang);
-            // Debug.Log(rotat);
-            // rotat = new Quaternion(x,z,y,w);
-            // rotat = new Quaternion(x,y,z,w);
-            // rotat = new Quaternion(y,x,z,w); 
-            // -70 0 -130
-            // rotat = new Quaternion(y,z,x,w);
-            // -70 -130 0
-            // rotat = new Quaternion(x,z,y,w);
-            // rotat = new Quaternion(z,x,y,w);
-            // rotat = new Quaternion(z,y,x,w);
-
             rotat = new Quaternion(-y,z,-x,w);
-            // 70 -130 0
-
-            // rotat = new Quaternion(-y,-z,x,w);
-            // 70 -130 0
-
-            // X = 70 Y = 40 Z = 90
-            // W Y Z  -20 90 130
-            // w z y x  -20 130 90  (90-20, 90+40, 90) - Most accurate so far
+          
 
                         
             drone.transform.rotation = rotat;
@@ -457,6 +462,28 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
         red.interactable=true;
         green.interactable=true;
         blue.interactable=true;
+    }
+
+    private void SetGrid()
+    {
+        switch (curgrid)
+        {
+            case 1:
+                grid.texture = grid2;
+                break;
+            case 2:
+                grid.texture = grid3;
+                break;
+            case 3:
+                grid.texture = grid4;
+                break;
+            default:
+                if (curgrid >= 4)
+                {
+                    grid.texture = grid5;
+                }
+                break;
+        }
     }
 
 

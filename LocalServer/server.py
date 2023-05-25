@@ -13,13 +13,13 @@ from pyquaternion import Quaternion
 # Create UDP socket to use for sending (and receiving)
 sock = U.UdpComms(udpIP="127.0.0.1", portTX=8080, portRX=8001, enableRX=True, suppressWarnings=True)
 sock2 = U.UdpComms(udpIP="127.0.0.1", portTX=8000, portRX=8002, enableRX=True, suppressWarnings=True)
-cam = cv2.VideoCapture('Samples/mov_1.mp4')
+cam = cv2.VideoCapture('Samples/east_1.mp4')
 i = 1
 lat = 50
 lon = 50
 alt = 40
 
-df = pd.read_csv('Samples/mov_1.csv')
+df = pd.read_csv('Samples/east_1.csv')
 
 
 import numpy as np
@@ -84,70 +84,18 @@ while True:
         data['lon'] =di['drone/location/longitude']
         data['alt'] = di['drone/ground_distance']
 
-        # data['drone_x'] = di['drone/local_position/x']
-        # data['drone_y'] = di['drone/local_position/y']
-        # data['drone_z'] = di['drone/local_position/z']
+       
 
         
-        # Unreal Quat Values - Camera
-        # data['w'] = di['camera/quat/w'] * di['drone/quat/w'] 
-        # data ['x'] =di['camera/quat/x'] * di['drone/quat/x'] 
-        # data ['y'] =di['camera/quat/y'] * di['drone/quat/y'] 
-        # data ['z'] =di['camera/quat/z'] * di['drone/quat/z'] 
-
-         # Unreal Quat Values - Camera
         data['w'] = di['camera/quat/w'] 
         data ['x'] =di['camera/quat/x']
         data ['y'] =di['camera/quat/y']
         data ['z'] =di['camera/quat/z']
 
        
-        unreal_camera_quat = Quaternion(data['w'],data['x'],data['y'],data['z'])
-        # unreal_ned_quat_drone = Quaternion(float(di['drone/quat/w']),
-        #                                        float(di['drone/quat/x']),
-        #                                        float(di['drone/quat/y']),
-        #                                        float(di['drone/quat/z']))
-        
-        # unreal_camera_final_quat = unreal_ned_quat_drone * unreal_camera_quat * unreal_ned_quat_drone.inverse
-        unity_camera_quat = Quaternion()
-
-        # Unreal to Unity Rotation Conversion
-        # Step 1 : 90 degree counter clockwise along the z axis. 
-        z_axis = [0,0,1]
-        z_rotation = Quaternion(axis=z_axis, angle=np.pi/2)  # 90 degree rotation around z-axis
-        unity_camera_quat = z_rotation * unreal_camera_quat
-
-        # Step 2:  rotate it by 90 degree counter clockwise along the x axis
-        x_axis = [1,0,0] 
-        x_rotation = Quaternion(axis=x_axis, angle=np.pi/2)
-        unity_camera_quat = x_rotation * unity_camera_quat
-
-        # data['w'] = unity_camera_quat.x
-        # data ['x'] =unity_camera_quat.y
-        # data ['y'] =unity_camera_quat.z
-        # data ['z'] =unity_camera_quat.w
 
         data['roll'],data['pitch'],data['yaw'] = quaternion_to_euler(data['w'],data['x'],data['y'],data['z'])
         
-        # data['w'] = unity_camera_quat.w
-        # data ['x'] =unity_camera_quat.x
-        # data ['y'] =unity_camera_quat.y
-        # data ['z'] =unity_camera_quat.z
-
-    
-        
-
-        # Transform Unreal Quat in to Unreal Euler
-
-        # data['roll'],data['pitch'],data['yaw'] = quaternion_to_euler(data['w'],data['x'],data['y'],data['z'])
-        # print("Unreal Pitch and Yaw are".format(data['roll'],data['pitch'],data['yaw']))
-        
-
-        # Euler Roll pitch yaw
-        data['pitch'] = data['pitch']
-        data['roll'] = data['roll']
-        data['yaw'] =  data['yaw']
-
 
         print(data['roll'],data['pitch'],data['yaw'])
         # print(di)
@@ -164,35 +112,6 @@ while True:
             print(dat)
             dat = "{"+dat+"}"
             dat = json.loads(dat)
-
-            # Convert NED Unreal Quaternion ENU Quaternion
-            ned_w= float(dat["w"])
-            ned_x = float(dat["x"])
-            ned_y = float(dat["y"])
-            ned_z = float(dat["z"])
-
-            # VIRTUAL DRONE
-            # cam_final_quat = Quaternion(ned_w,ned_z,ned_x,ned_y)
-
-
-            # cam_final_quat = Quaternion(-ned_x,ned_z,ned_y,ned_w)
-            # cam_final_quat = Quaternion(-ned_x,ned_y,-ned_z,ned_w)
-            # cam_final_quat = Quaternion(-ned_y,ned_z,-ned_x,ned_w)
-            
-            # REAL DRONE
-            cam_final_quat = Quaternion(ned_w,ned_y,ned_z,ned_x)
-
-
-            # Quaternion(-y,z,-x,w);
-            
-            
-
-            # cam_final_quat = cam_final_quat.rotate(Quaternion(vector=[0, 0, -1]))
-            
-            # cam_final_quat = ned_to_enu_quaternion([cam_final_quat.w, cam_final_quat.x,cam_final_quat.y , cam_final_quat.z ])
-
-
-
 
             c = GC.CameraRayProjection(69,[float(dat["lat"]),float(dat["lon"]),float(dat["alt"])],
                                        [int(float(dat["resw"])),int(float(dat["resh"]))],
