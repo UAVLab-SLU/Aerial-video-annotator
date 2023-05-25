@@ -112,12 +112,11 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
             "six", "seven", "eight", "nine", "ten",
             "eleven", "twelve", "thirteen", "fourteen", "fifteen",
             "sixteen", "seventeen", "eighteen", "nineteen", "twenty",
-            "twenty-one", "twenty-two", "twenty-three", "twenty-four", "twenty-five",
+            "twenty one", "twenty two", "twenty three", "twenty four", "twenty five",
             "grid", "green", "blue", "red", "marker", "in"
         };
 
     }
-
 
 
     //Update is called once per frame
@@ -156,15 +155,8 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
             y = (float) Convert.ToDouble(values["y"]);
             z = (float) Convert.ToDouble(values["z"]);
 
-            // var drone_x = (float) Convert.ToDouble(values["drone_x"]);
-            // var drone_y = (float) Convert.ToDouble(values["drone_y"]);
-            // var drone_z = (float) Convert.ToDouble(values["drone_z"]);
-
             var world_pos = GPSEncoder.GPSToUCS(lat,lon);
             world_pos.y = alt;
-            // var temp = world_pos.x;
-            // world_pos.x = -1.0f*world_pos.z;
-            // world_pos.z = temp;
 
             pitch = (float) Convert.ToDouble(values["pitch"]);
             roll = (float) Convert.ToDouble(values["roll"]);
@@ -184,16 +176,15 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
                 Debug.Log("Object placed");
                 Po = false;
             }
-            
-            
-           
-            
-
+            Debug.Log(pitch);
+            if (!float.IsNaN(pitch) && !float.IsNaN(roll) && !float.IsNaN(yaw))
+            {
+            Debug.Log("Innnnnnnnnnnnnnnnn"); 
             ang.x = -1.0f*pitch;
             ang.y = yaw;
             ang.z = roll;
 
-            Debug.Log(ang);
+            // Debug.Log(ang);
             float tempv = (float)Math.PI/180;
             if(ang.x>90.0f){
                 ang.x = ang.x%90.0f;
@@ -201,7 +192,7 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
             if(ang.x<0.0f){
                 ang.x = ang.x*-1.0f;
             }
-            Debug.Log(ang.x);
+            // Debug.Log(ang.x);
             float c = (90.0f-ang.x) * tempv;
             float tempang = (float)Math.Cos(c);
             float ht = alt/tempang;
@@ -210,17 +201,23 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
             if(ht<0.0f){
                 ht = -1.0f* ht;
             }
-            canv.planeDistance = ht+4;
+            canv.planeDistance = ht+1;
             // Debug.Log(canv.planeDistance);
-
+            }
+            
             
             rotat = new Quaternion(-y,z,-x,w);
-          
+            if (!float.IsNaN(rotat.x) && !float.IsNaN(rotat.y) && !float.IsNaN(rotat.z) && !float.IsNaN(rotat.w))
+            {
+                drone.transform.rotation = rotat;
+            }      
+            
 
-                        
-            drone.transform.rotation = rotat;
-            // Debug.Log(ang);
-            drone.transform.position = world_pos; 
+            if (!float.IsNaN(world_pos.x) && !float.IsNaN(world_pos.y) && !float.IsNaN(world_pos.z))
+            {
+               drone.transform.position = world_pos; 
+            }
+            
 
 
         }
@@ -275,16 +272,11 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
             payload.Add("alt", alt.ToString());
             payload.Add("lon", lon.ToString());
             
-            
-            // payload.Add("w", w.ToString());
-            // payload.Add("x", x.ToString());
-            // payload.Add("y", y.ToString());
-            // payload.Add("z", z.ToString());
 
-            payload.Add("w", rotat.w.ToString());
-            payload.Add("x", rotat.x.ToString());
-            payload.Add("y", rotat.y.ToString());
-            payload.Add("z", rotat.z.ToString());
+            // payload.Add("w", rotat.w.ToString());
+            // payload.Add("x", rotat.x.ToString());
+            // payload.Add("y", rotat.y.ToString());
+            // payload.Add("z", rotat.z.ToString());
 
             payload.Add("resh",canv.GetComponent<RectTransform>().rect.height.ToString());
             payload.Add("resw",canv.GetComponent<RectTransform>().rect.width.ToString());

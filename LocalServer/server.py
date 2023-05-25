@@ -13,14 +13,13 @@ from pyquaternion import Quaternion
 # Create UDP socket to use for sending (and receiving)
 sock = U.UdpComms(udpIP="127.0.0.1", portTX=8080, portRX=8001, enableRX=True, suppressWarnings=True)
 sock2 = U.UdpComms(udpIP="127.0.0.1", portTX=8000, portRX=8002, enableRX=True, suppressWarnings=True)
-cam = cv2.VideoCapture('Samples/east_1.mp4')
+cam = cv2.VideoCapture('Samples/mov_1.mp4')
 i = 1
 lat = 50
 lon = 50
 alt = 40
 
-df = pd.read_csv('Samples/east_1.csv')
-
+df = pd.read_csv('Samples/mov_1.csv')
 
 import numpy as np
 def quaternion_to_euler(w, x, y, z):
@@ -44,23 +43,6 @@ def quaternion_to_euler(w, x, y, z):
 
     return X, Y, Z
 
-def ned_to_enu_quaternion(ned_quat):
-    # NED to ENU conversion matrix
-    conversion_matrix = np.array([[0, 1, 0, 0],
-                                  [1, 0, 0, 0],
-                                  [0, 0, -1, 0],
-                                  [0, 0, 0, 1]])
-    
-    # Convert quaternion to a 4x1 matrix
-    ned_quat_matrix = np.array([ned_quat[0], ned_quat[1], ned_quat[2], ned_quat[3]]).reshape(4, 1)
-    
-    # Perform the conversion: ENU = Conversion_Matrix * NED
-    enu_quat_matrix = np.dot(conversion_matrix, ned_quat_matrix)
-    
-    # Convert the resulting 4x1 matrix back to a quaternion
-    enu_quat = enu_quat_matrix.flatten()
-    
-    return enu_quat
 
 while True:
     ret,camImage = cam.read()
@@ -84,26 +66,22 @@ while True:
         data['lon'] =di['drone/location/longitude']
         data['alt'] = di['drone/ground_distance']
 
-       
-
-        
         data['w'] = di['camera/quat/w'] 
         data ['x'] =di['camera/quat/x']
         data ['y'] =di['camera/quat/y']
         data ['z'] =di['camera/quat/z']
 
-       
-
         data['roll'],data['pitch'],data['yaw'] = quaternion_to_euler(data['w'],data['x'],data['y'],data['z'])
         
 
-        print(data['roll'],data['pitch'],data['yaw'])
+        # print(data['roll'],data['pitch'],data['yaw'])
         # print(di)
+      
+
     
         sock.SendData(json.dumps(data).encode('utf-8')) # Send this string to other application
     i += 2
-    # lat +=3
-    # lon +=3
+
 
     dat = sock.ReadReceivedData() # read data
 
@@ -116,7 +94,7 @@ while True:
             c = GC.CameraRayProjection(69,[float(dat["lat"]),float(dat["lon"]),float(dat["alt"])],
                                        [int(float(dat["resw"])),int(float(dat["resh"]))],
                                        GC.Coordinates(int(float(dat["xpos"])),int(float(dat["ypos"]))),
-                                       
+
                                     [data['w'],data['x'],data['y'],data['z']])
             
             target_direction_ENU = c.target_ENU()
@@ -136,8 +114,8 @@ while True:
 
     dat2 = sock2.ReadReceivedData() # read data
     #implement timer function
-    if dat2 != None: # if NEW data has been received since last ReadReceiveddat function call
-            print(type(dat)) # print new received dat
+    if dat2 != None: 
+            print(type(dat)) 
             print(dat)
             
 
