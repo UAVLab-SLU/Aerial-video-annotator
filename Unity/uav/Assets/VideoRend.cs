@@ -96,7 +96,7 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
         languageModelProvider.languageModels = new List<StreamingAssetsLanguageModel>
         {
         // new() {language = SystemLanguage.English, path = "LanguageModels/en-IND"},
-        new() {language = SystemLanguage.English, path = "LanguageModels/en-US3"},
+        new() {language = SystemLanguage.English, path = "LanguageModels/en-US"},
         };
         // Setup microphone speech source. The default settings can be left unchanged, but we will do it as an example.
         speechSource.DeviceName = null;
@@ -113,7 +113,7 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
             "eleven", "twelve", "thirteen", "fourteen", "fifteen",
             "sixteen", "seventeen", "eighteen", "nineteen", "twenty",
             "twenty-one", "twenty-two", "twenty-three", "twenty-four", "twenty-five",
-            "grid", "green", "blue", "red"
+            "grid", "green", "blue", "red", "marker", "in"
         };
 
     }
