@@ -10,7 +10,7 @@ using System;
 using System.Linq;
 using Newtonsoft.Json;
 using Recognissimo.Components;
-
+using TMPro;
 public class VideoRend : MonoBehaviour//,IPointerEnterHandler
 {
   // Start is called before the first frame update
@@ -41,7 +41,7 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
 
   private int selectedGrid;
 
-
+  TextMeshProUGUI dg;
   float lat = 0.0f;
   float lon = 0.0f;
   float alt = 0.0f;
@@ -66,10 +66,11 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
   AudioClip clip;
   public SpeechRecognizer speechRecognizer;
 
+
   bool Po;
 
   // string microPhn = Microphone.devices[0];
-
+  public GameObject dialogue;
 
   void Start()
   {
@@ -107,6 +108,7 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
     speechRecognizer.LanguageModelProvider = languageModelProvider;
     speechRecognizer.SpeechSource = speechSource;
     // Handle events.
+    // speechRecognizer.PartialResultReady.AddListener(OnPartialResult);
     speechRecognizer.ResultReady.AddListener(OnResult);
     speechRecognizer.Vocabulary = new List<string>
         {
@@ -117,7 +119,9 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
             "twenty one", "twenty two", "twenty three", "twenty four", "twenty five",
             "green", "blue", "red",
         };
+    startRecord();
 
+     
   }
 
 
@@ -344,7 +348,6 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
 
   public void startRecord()
   {
-    selectedGrid = curgrid;
     Debug.Log("Recording started");
 
     //clip = Microphone.Start(Microphone.devices[0], true, 10, AudioSettings.outputSampleRate);
@@ -359,8 +362,12 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
 
   }
 
-  void sendUserInput(float x, float y)
+  void sendUserInput(float x, float y, string clr, string grd)
   {
+    var dobj = Instantiate(dialogue);
+    dg = dobj.GetComponentInChildren<TextMeshProUGUI>();
+    dg.text = clr+" marker is placed in grid "+grd;
+    Destroy(dobj,3);
     Dictionary<string, string> payload = new Dictionary<string, string>();
     payload.Add("xpos", x.ToString());
     payload.Add("ypos", y.ToString());
@@ -379,13 +386,29 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
     byte[] data = Encoding.UTF8.GetBytes(result);
     client.Send(data, data.Length, endPoint);
   }
+
+  public void OnPartialResult(PartialResult partialResult)
+  {
+    Debug.Log(partialResult.partial);
+    string[] keywords = partialResult.partial.Split(' ');
+
+  }
+
   private void OnResult(Result result)
   {
     Debug.Log(result.text);
-    int width = (int)canv.GetComponent<RectTransform>().rect.width;
-    int height = (int)canv.GetComponent<RectTransform>().rect.height;
+    
     string[] keywords = result.text.Split(' ');
 
+    Processtext(keywords);
+
+  }
+
+
+  private void Processtext(string[] keywords){
+
+    int width = (int)canv.GetComponent<RectTransform>().rect.width;
+    int height = (int)canv.GetComponent<RectTransform>().rect.height;
     string[] colors = { "green", "red", "blue" };
     string finalColor = "";
     string finalGrid = "";
@@ -486,7 +509,7 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
       return;
     }
     Debug.Log(finalGridNum);
-    int tempSN = selectedGrid + 1;
+    int tempSN = curgrid + 1;
     if (tempSN>5){
         tempSN = 5;
     }
@@ -497,7 +520,7 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
       Debug.Log(midpoints[finalGridNum - 1].Item1);
       Debug.Log(midpoints[finalGridNum - 1].Item2);
       selectedButton = finalColor;
-      sendUserInput(midpoints[finalGridNum - 1].Item1,midpoints[finalGridNum - 1].Item2);
+      sendUserInput(midpoints[finalGridNum - 1].Item1,midpoints[finalGridNum - 1].Item2,finalColor,finalGrid);
       if (selectedButton == "green")
         {
             GreenButton();
@@ -516,7 +539,6 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
       Debug.Log("Grid Number error");
       return;
     }
-
   }
 
 
