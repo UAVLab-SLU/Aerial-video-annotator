@@ -1,0 +1,6 @@
+https://mm-public-fileshare.s3.amazonaws.com/droneresponse_mathtools-0.2.1-py2.py3-none-any.whl
+nvector==0.7.6
+paho-mqtt==1.5.1
+pytest
+numpy
+vector3d
