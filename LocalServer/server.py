@@ -10,6 +10,7 @@ import pandas as pd
 import GeoCoordinationHandler as GC
 import math
 from pyquaternion import Quaternion
+import requests
 # Create UDP socket to use for sending (and receiving)
 sock = U.UdpComms(udpIP="127.0.0.1", portTX=8080, portRX=8001, enableRX=True, suppressWarnings=True)
 sock2 = U.UdpComms(udpIP="127.0.0.1", portTX=8000, portRX=8002, enableRX=True, suppressWarnings=True)
@@ -43,6 +44,10 @@ def quaternion_to_euler(w, x, y, z):
 
     return X, Y, Z
 
+database_url = "https://uavlab-98a0c-default-rtdb.firebaseio.com/"
+def post_data(data):
+    response = requests.post(database_url + "/location.json", json=data)
+    print(response.status_code)
 
 while True:
     ret,camImage = cam.read()
@@ -111,6 +116,13 @@ while True:
                 'alt' : str(intersect_LLA[2])
             }
             sock2.SendData(json.dumps(di2).encode('utf-8'))
+
+            db_di ={
+                 'lat' : float(str(intersect_LLA[0])),
+                'lon' : float(str(intersect_LLA[1])),
+                'obj':int(dat["obj"])
+            }
+            post_data(db_di)
 
     dat2 = sock2.ReadReceivedData() # read data
     #implement timer function

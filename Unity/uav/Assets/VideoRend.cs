@@ -288,6 +288,16 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
         // payload.Add("y", rotat.y.ToString());
         // payload.Add("z", rotat.z.ToString());
 
+        if(selectedButton == "red"){
+          payload.Add("obj","0");
+        }
+        if(selectedButton == "green"){
+          payload.Add("obj","1");
+        }
+        if(selectedButton == "blue"){
+          payload.Add("obj","2");
+        }
+
         payload.Add("resh", canv.GetComponent<RectTransform>().rect.height.ToString());
         payload.Add("resw", canv.GetComponent<RectTransform>().rect.width.ToString());
 
@@ -381,6 +391,16 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
     // payload.Add("z", z.ToString());
     payload.Add("resh", canv.GetComponent<RectTransform>().rect.height.ToString());
     payload.Add("resw", canv.GetComponent<RectTransform>().rect.width.ToString());
+
+    if(selectedButton == "red"){
+      payload.Add("obj","0");
+    }
+    if(selectedButton == "green"){
+      payload.Add("obj","1");
+    }
+    if(selectedButton == "blue"){
+      payload.Add("obj","2");
+    }
 
     string result = string.Join(",", payload.Select(x => '"' + x.Key + '"' + ": " + '"' + x.Value + '"'));
     byte[] data = Encoding.UTF8.GetBytes(result);
