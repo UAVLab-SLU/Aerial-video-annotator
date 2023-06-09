@@ -1,15 +1,6 @@
-#!/usr/bin/env python
 
-# NOTE: Line numbers of this example are referenced in the user guide.
-# Don't forget to update the user guide after every modification of this example.
-
-import csv
-import math
-import time
 import os
 import queue
-import shlex
-import subprocess
 import tempfile
 import threading
 import UdpComms as U
@@ -19,7 +10,7 @@ import base64
 import json
 import GeoCoordinationHandler as GC
 import numpy as np
-
+import requests
 import olympe
 from olympe.messages.ardrone3.Piloting import TakeOff, Landing
 from olympe.messages.ardrone3.Piloting import moveBy
@@ -30,7 +21,7 @@ from olympe.messages.ardrone3.GPSSettingsState import GPSFixStateChanged
 from olympe.video.renderer import PdrawRenderer
 
 from olympe.messages.gimbal import (
-   set_target
+    set_target
 )
 
 olympe.log.update_config({"loggers": {"olympe": {"level": "WARNING"}}})
@@ -41,19 +32,25 @@ DRONE_IP = os.environ.get("DRONE_IP", "192.168.42.1")
 DRONE_RTSP_PORT = os.environ.get("DRONE_RTSP_PORT")
 # sock = U.UdpComms(udpIP="10.0.0.1", portTX=8080, portRX=8001, enableRX=True, suppressWarnings=True)
 # sock2 = U.UdpComms(udpIP="10.0.0.1", portTX=8000, portRX=8002, enableRX=False, suppressWarnings=True)
-sock = U.UdpComms(udpIP="127.0.0.1", portTX=8080, portRX=8001, enableRX=True, suppressWarnings=True)
-sock2 = U.UdpComms(udpIP="127.0.0.1", portTX=8000, portRX=8002, enableRX=False, suppressWarnings=True)
+sock = U.UdpComms(udpIP="127.0.0.1", portTX=8080, portRX=8001,
+                  enableRX=True, suppressWarnings=True)
+sock2 = U.UdpComms(udpIP="127.0.0.1", portTX=8000, portRX=8002,
+                   enableRX=False, suppressWarnings=True)
 ct = 0
+
+database_url = "https://uavlab-98a0c-default-rtdb.firebaseio.com/"
+
 class StreamingExample:
     def __init__(self):
         # Create the olympe.Drone object from its IP address
         self.drone = olympe.Drone(DRONE_IP)
-        
+
         self.tempd = tempfile.mkdtemp(prefix="olympe_streaming_test_")
 
         print(f"Olympe streaming example output dir: {self.tempd}")
         self.frame_queue = queue.Queue()
-        self.processing_thread = threading.Thread(target=self.yuv_frame_processing)
+        self.processing_thread = threading.Thread(
+            target=self.yuv_frame_processing)
         self.renderer = None
 
     def start(self):
@@ -89,6 +86,7 @@ class StreamingExample:
         # Properly stop the video stream and disconnect
         assert self.drone.streaming.stop()
         assert self.drone.disconnect()
+
     def yuv_frame_cb(self, yuv_frame):
         """
         This function will be called by Olympe for each decoded YUV frame.
@@ -118,8 +116,6 @@ class StreamingExample:
             self.frame_queue.get_nowait().unref()
         return True
 
-
-
     def show_yuv_frame(self, yuv_frame):
         # the VideoFrame.info() dictionary contains some useful information
         # such as the video resolution
@@ -130,7 +126,7 @@ class StreamingExample:
             info["raw"]["frame"]["info"]["width"],
         )
         # print(yuv_frame.vmeta())
-        
+
         di = {}
         di['lat'] = yuv_frame.vmeta()[1]["drone"]["location"]["latitude"]
         di['lon'] = yuv_frame.vmeta()[1]["drone"]["location"]["longitude"]
@@ -139,15 +135,9 @@ class StreamingExample:
         di['y'] = yuv_frame.vmeta()[1]["camera"]["quat"]["y"]
         di['z'] = yuv_frame.vmeta()[1]["camera"]["quat"]["z"]
         di['alt'] = yuv_frame.vmeta()[1]["drone"]["ground_distance"]
-        # di['roll'],di['pitch'],di['yaw'] = self.quaternion_to_euler(di['y']*-1.0,di['z']*-1.0,di['w'],di['x'])
-        di['roll'],di['pitch'],di['yaw'] = self.quaternion_to_euler(di['w'],di['x'],di['y'],di['z'])
-        print(di['roll'],di['pitch'],di['yaw'])
-        di['pitch'] = 180.0 - di['pitch']
-        di['roll'] = 180.0 - di['roll']
-        di['yaw'] = di['yaw']+270
-        
-        print(di['roll'],di['pitch'],di['yaw'])
-        # print(di['roll'],di["pitch"],di['yaw'])
+        di['roll'], di['pitch'], di['yaw'] = self.quaternion_to_euler(
+            di['w'], di['x'], di['y'], di['z'])
+        print(di['roll'], di['pitch'], di['yaw'])
         # print(di)
         # convert pdraw YUV flag to OpenCV YUV flag
         cv2_cvt_color_flag = {
@@ -155,33 +145,42 @@ class StreamingExample:
             olympe.VDEF_NV12: cv2.COLOR_YUV2BGR_NV12,
         }[yuv_frame.format()]
         cv2frame = cv2.cvtColor(yuv_frame.as_ndarray(), cv2_cvt_color_flag)  # noqa
-        frme = imutils.resize(cv2frame,width=400)
-        encoded,buffer = cv2.imencode('.jpg',frme,[cv2.IMWRITE_JPEG_QUALITY,80])
+        frme = imutils.resize(cv2frame, width=400)
+        encoded, buffer = cv2.imencode(
+            '.jpg', frme, [cv2.IMWRITE_JPEG_QUALITY, 80])
         frameBytes = buffer.tobytes()
         encoded_string = base64.b64encode(frameBytes)
         di['image'] = encoded_string.decode()
         sock.SendData(json.dumps(di).encode('utf-8'))
         print("...")
-        data = sock.ReadReceivedData() 
-        if data != None: # if NEW data has been received since last ReadReceivedData function call
-            print(type(data)) # print new received data
+        data = sock.ReadReceivedData()
+        if data != None:  # if NEW data has been received since last ReadReceivedData function call
+            print(type(data))  
             print(data)
             data = "{"+data+"}"
             data = json.loads(data)
-            c = GC.CameraRayProjection(69,[float(data["lat"]),float(data["lon"]),float(data["alt"])],[int(float(data["resw"])),int(float(data["resh"]))],GC.Coordinates(int(float(data["xpos"])),int(float(data["ypos"]))),[float(data["w"]),float(data["x"]), float(data["y"]), float(data["z"])])
+            c = GC.CameraRayProjection(69, [float(data["lat"]), float(data["lon"]), float(data["alt"])], 
+                                       [int(float(data["resw"])), int(float(data["resh"]))], 
+                                       GC.Coordinates(int(float(data["xpos"])), int(float(data["ypos"]))), 
+                                       [float(data["w"]), float(data["x"]), float(data["y"]), float(data["z"])])
             target_direction_ENU = c.target_ENU()
             target_direction_ECEF = c.ENU_to_ECEF(target_direction_ENU)
             intersect_ECEF = c.target_location(target_direction_ECEF)
-            #print("Intersect ECEF", intersect_ECEF.x,intersect_ECEF.y,intersect_ECEF.z)
-            intersect_LLA = c.ECEFtoLLA(intersect_ECEF.x,intersect_ECEF.y,intersect_ECEF.z)
+            intersect_LLA = c.ECEFtoLLA(
+                intersect_ECEF.x, intersect_ECEF.y, intersect_ECEF.z)
             print(intersect_LLA)
             di2 = {
-                'lat' : str(intersect_LLA[0]),
-                'lon' : str(intersect_LLA[1]),
-                'alt' : str(intersect_LLA[2])
+                'lat': str(intersect_LLA[0]),
+                'lon': str(intersect_LLA[1]),
+                'alt': str(intersect_LLA[2])
             }
             sock2.SendData(json.dumps(di2).encode('utf-8'))
-            
+            db_di ={
+                 'lat' : float(str(intersect_LLA[0])),
+                'lon' : float(str(intersect_LLA[1])),
+                'obj':int(data["obj"])
+            }
+            self.post_data(db_di)
 
     def fly(self):
         # print('Streamingggggggggggg')
@@ -203,34 +202,35 @@ class StreamingExample:
         ).wait()
         maxtilt = self.drone.get_state(MaxTiltChanged)["max"]
         self.drone(MaxTilt(maxtilt)).wait()
-        
-        self.drone( set_target( gimbal_id = 0,
-                                  control_mode = "position",
-                                  yaw_frame_of_reference = "relative",
-                                  yaw = 0.0,
-                                  pitch_frame_of_reference = "relative",
-                                  pitch = -85.0,
-                                  roll_frame_of_reference = "relative",
-                                  roll = 0.0
-                                ) ).wait()
-        self.drone(moveBy(0,0,-50,0,_timeout=1000)).wait().success()
+
+        self.drone(set_target(gimbal_id=0,
+                              control_mode="position",
+                              yaw_frame_of_reference="relative",
+                              yaw=0.0,
+                              pitch_frame_of_reference="relative",
+                              pitch=-85.0,
+                              roll_frame_of_reference="relative",
+                              roll=0.0
+                              )).wait()
+        self.drone(moveBy(0, 0, -50, 0, _timeout=1000)).wait().success()
         # time.sleep(30)
         # self.drone(moveBy(80,0,0,0,_timeout=100)).wait().success()
         # self.drone(moveBy(0,60,0,0,_timeout=100)).wait().success()
         # self.drone(moveBy(-80,0,0,0,_timeout=100)).wait().success()
         # self.drone(moveBy(0,-60,0,0,_timeout=100)).wait().success()
-        self.drone(moveBy(0,0,50,0,_timeout=100)).wait().success()
+        self.drone(moveBy(0, 0, 50, 0, _timeout=100)).wait().success()
         # for i in range(4):
         #     print(f"Moving by ({i + 1}/4)...")
         #     self.drone(moveBy(10, 0, 0, math.pi, _timeout=20)).wait().success()
 
         print("Landing...")
-        self.drone(Landing() >> FlyingStateChanged(state="landed", _timeout=5)).wait()
+        self.drone(Landing() >> FlyingStateChanged(
+            state="landed", _timeout=5)).wait()
         print("Landed\n")
 
         import numpy as np
 
-    def quaternion_to_euler(self,w, x, y, z):
+    def quaternion_to_euler(self, w, x, y, z):
         ysqr = y * y
 
         t0 = +2.0 * (w * x + y * z)
@@ -238,11 +238,11 @@ class StreamingExample:
         X = np.degrees(np.arctan2(t0, t1))
 
         t2 = +2.0 * (w * y - z * x)
-        t2 = np.where(t2>+1.0,+1.0,t2)
-        #t2 = +1.0 if t2 > +1.0 else t2
+        t2 = np.where(t2 > +1.0, +1.0, t2)
+        # t2 = +1.0 if t2 > +1.0 else t2
 
-        t2 = np.where(t2<-1.0, -1.0, t2)
-        #t2 = -1.0 if t2 < -1.0 else t2
+        t2 = np.where(t2 < -1.0, -1.0, t2)
+        # t2 = -1.0 if t2 < -1.0 else t2
         Y = np.degrees(np.arcsin(t2))
 
         t3 = +2.0 * (w * z + x * y)
@@ -250,11 +250,12 @@ class StreamingExample:
         Z = np.degrees(np.arctan2(t3, t4))
 
         return X, Y, Z
+    
+    
+    def post_data(self,data):
+        response = requests.post(database_url + "/location.json", json=data)
+        print(response.status_code)
 
-
-# print(quaternion_to_euler_angle_vectorized1(0.290620893239975, -0.6446235179901123, -0.2906208634376526,-0.6446235775947571))
-        
- 
 
 def test_streaming():
     streaming_example = StreamingExample()
