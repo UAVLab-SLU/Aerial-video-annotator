@@ -11,11 +11,25 @@ using System.Linq;
 using Newtonsoft.Json;
 using Recognissimo.Components;
 using TMPro;
+using System.Collections;
+using UnityEngine.Networking;
+
+[Serializable]
+public class OSLocation 
+{
+    // Start is called before the first frame update
+   public double lat {get;set;}
+   public double lon {get;set;}
+  
+}
+
 public class VideoRend : MonoBehaviour//,IPointerEnterHandler
 {
   // Start is called before the first frame update
   public Canvas canv;
   public RawImage image;
+
+  public GameObject OSPerson;
   public GameObject drone;
   public GameObject obj1;
   public GameObject obj2;
@@ -120,9 +134,44 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
             "green", "blue", "red",
         };
     startRecord();
-
+    StartCoroutine(GetOSLocation());
      
   }
+
+
+
+  IEnumerator GetOSLocation()
+    {   
+        while(true){
+
+          if(!Po)
+          {
+            using (UnityWebRequest webRequest = UnityWebRequest.Get("https://uavlab-98a0c-default-rtdb.firebaseio.com/OSlocation.json"))
+            {
+                // Request and wait for the desired page.
+                yield return webRequest.SendWebRequest();
+                if (webRequest.result == UnityWebRequest.Result.ConnectionError)
+                {
+                    Debug.Log(": Error: " + webRequest.error);
+                }
+                else
+                {
+                    // Print out the received data.
+                    // Debug.Log("Received: " + webRequest.downloadHandler.text);
+                    OSLocation osl = JsonConvert.DeserializeObject<OSLocation>(webRequest.downloadHandler.text);
+                    // Debug.Log($"Location{osl.lat}, {osl.lon}");
+                   
+                    var os_pos = GPSEncoder.GPSToUCS((float)osl.lat, (float)osl.lon);
+                    os_pos.y = 0f;
+                    OSPerson.transform.position = os_pos;
+                    // GPSEncoder.SetLocalOrigin(new Vector2((float)osl.lat,(float)osl.lon));
+                }
+            }
+          }
+          yield return new WaitForSeconds(1);
+        }
+        
+    }
 
 
   //Update is called once per frame
@@ -183,6 +232,10 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
         InstObj(world_p);
         Debug.Log("Object placed");
         Po = false;
+        Vector3 ostemp = new Vector3(0f,-100f,0f);
+        Vector3 osang = new Vector3();
+        osang.x = 90;
+        OSPerson = Instantiate(OSPerson,ostemp, Quaternion.Euler(osang));
       }
      
       if (!float.IsNaN(pitch) && !float.IsNaN(roll) && !float.IsNaN(yaw))

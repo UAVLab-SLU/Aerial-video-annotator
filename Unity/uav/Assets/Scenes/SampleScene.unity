@@ -1502,6 +1502,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   canv: {fileID: 1915456020}
   image: {fileID: 201361133}
+  OSPerson: {fileID: 8552181484257990417, guid: 65dec68f6ee43cd46bc6714063840c98, type: 3}
   drone: {fileID: 284531815}
   obj1: {fileID: 1961528569870676102, guid: 8a797e83caf78c199bdc08ce3e135cfc, type: 3}
   obj2: {fileID: 1961528569870676102, guid: 145bd67d869aa455fbb036bc7a68e503, type: 3}
