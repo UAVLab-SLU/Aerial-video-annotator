@@ -1505,8 +1505,8 @@ MonoBehaviour:
   OSPerson: {fileID: 8552181484257990417, guid: 65dec68f6ee43cd46bc6714063840c98, type: 3}
   drone: {fileID: 284531815}
   obj1: {fileID: 1961528569870676102, guid: 8a797e83caf78c199bdc08ce3e135cfc, type: 3}
-  obj2: {fileID: 1961528569870676102, guid: 145bd67d869aa455fbb036bc7a68e503, type: 3}
-  obj3: {fileID: 1961528569870676102, guid: f6f8c315ab61e34b19292eb84d11babe, type: 3}
+  obj2: {fileID: 1961528569870676102, guid: bf08cf102a524764eb50e5dec9cc4c87, type: 3}
+  obj3: {fileID: 1961528569870676102, guid: 5d3f0a60975f0f64da74124904200e9d, type: 3}
   placed_objects: []
   circle: {fileID: 251463988739871473, guid: f0e6a80386d68c040bf336287c7f3bed, type: 3}
   grid: {fileID: 611802374}

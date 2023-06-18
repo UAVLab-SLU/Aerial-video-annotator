@@ -14,14 +14,7 @@ using TMPro;
 using System.Collections;
 using UnityEngine.Networking;
 
-[Serializable]
-public class OSLocation 
-{
-    // Start is called before the first frame update
-   public double lat {get;set;}
-   public double lon {get;set;}
-  
-}
+
 
 public class VideoRend : MonoBehaviour//,IPointerEnterHandler
 {
@@ -53,7 +46,10 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
 
   private int curgrid;
 
+  private Dictionary<string,GameObject> placed_markers = new Dictionary<string, GameObject>();
   private int selectedGrid;
+
+  Dictionary<string,Location> locations;
 
   TextMeshProUGUI dg;
   float lat = 0.0f;
@@ -80,6 +76,13 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
   AudioClip clip;
   public SpeechRecognizer speechRecognizer;
 
+  private int GreenCount;
+
+  private int BlueCount;
+
+  private int RedCount;
+
+
 
   bool Po;
 
@@ -96,6 +99,9 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
     red.onClick.AddListener(RedButton);
 
     curgrid = 1;
+    BlueCount = 1;
+    GreenCount = 1;
+    RedCount = 1;
     SetGrid();
 
 
@@ -135,10 +141,34 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
         };
     startRecord();
     StartCoroutine(GetOSLocation());
+    StartCoroutine(GetNextMove());
      
   }
 
+  IEnumerator GetNextMove()
+    {   
+        while(true){
 
+          // if(!Po)
+          // {
+            using (UnityWebRequest webRequest = UnityWebRequest.Get("https://uavlab-98a0c-default-rtdb.firebaseio.com/nextMove.json"))
+            {
+                // Request and wait for the desired page.
+                yield return webRequest.SendWebRequest();
+                if (webRequest.result == UnityWebRequest.Result.ConnectionError)
+                {
+                    Debug.Log(": Error: " + webRequest.error);
+                }
+                else
+                {
+                    Debug.Log($"{webRequest.downloadHandler.text}------");
+                }
+            }
+          // }
+          yield return new WaitForSeconds(2);
+        }
+        
+    }
 
   IEnumerator GetOSLocation()
     {   
@@ -171,6 +201,72 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
           yield return new WaitForSeconds(1);
         }
         
+    }
+
+     IEnumerator GetLocations()
+    {
+        
+          if(!Po)
+          {
+            using (UnityWebRequest webRequest = UnityWebRequest.Get("https://uavlab-98a0c-default-rtdb.firebaseio.com/location.json"))
+            {
+                yield return webRequest.SendWebRequest();
+                if (webRequest.result == UnityWebRequest.Result.ConnectionError)
+                {
+                    // Debug.Log(": Error: " + webRequest.error);
+                }
+                else
+                {
+                    // Print out the received data.
+                    // Debug.Log("Received: " + webRequest.downloadHandler.text);
+                    locations = JsonConvert.DeserializeObject<Dictionary<string, Location>>(webRequest.downloadHandler.text);
+                    // Debug.Log(locations.Count);
+                    string color = "";
+                    string num = "";
+                    GameObject tempG = obj1;
+                    foreach (var key in locations.Keys)
+                    {   
+                      num = locations[key].ctr.ToString();
+                        if(locations[key].obj == 0){
+                            tempG = obj2;
+                            color = "Red";
+                            if(locations[key].ctr > RedCount){
+                              RedCount = locations[key].ctr;
+                            }
+                        }
+                        if(locations[key].obj == 1){
+                            tempG = obj1;
+                            color = "Green";
+                            if(locations[key].ctr > GreenCount){
+                              GreenCount = locations[key].ctr;
+                            }
+                        }
+                        if(locations[key].obj == 2){
+                            tempG = obj3;
+                            color = "Blue";
+                            if(locations[key].ctr > BlueCount){
+                              BlueCount = locations[key].ctr;
+                            }
+                        }
+                        var pos = GPSEncoder.GPSToUCS((float)locations[key].lat,(float)locations[key].lon);
+                        var gob = Instantiate(tempG, pos, Quaternion.Euler(ang));
+                        GameObject ttxt = gob.transform.GetChild(0).gameObject;
+                        TextMeshPro mText = ttxt.GetComponent<TextMeshPro>();
+                        mText.text = color+" "+num;
+                        string tempKey = locations[key].obj.ToString() + locations[key].ctr.ToString();
+                        placed_markers[tempKey] = gob;
+                    
+                    }
+                    // Debug.Log("iiiiiiiiii");
+                    // Li.LO(locations);
+                    
+                }
+            }
+            // Debug.Log("Location fetched");
+            yield return null;
+          
+            
+        }
     }
 
 
@@ -229,13 +325,14 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
       {
         GPSEncoder.SetLocalOrigin(new Vector2(lat, lon));
         var world_p = GPSEncoder.GPSToUCS(lat, lon);
-        InstObj(world_p);
+        // InstObj(world_p);
         Debug.Log("Object placed");
         Po = false;
         Vector3 ostemp = new Vector3(0f,-100f,0f);
         Vector3 osang = new Vector3();
         osang.x = 90;
         OSPerson = Instantiate(OSPerson,ostemp, Quaternion.Euler(osang));
+        StartCoroutine(GetLocations());
       }
      
       if (!float.IsNaN(pitch) && !float.IsNaN(roll) && !float.IsNaN(yaw))
@@ -343,12 +440,15 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
 
         if(selectedButton == "red"){
           payload.Add("obj","0");
+          payload.Add("ctr",RedCount.ToString());
         }
         if(selectedButton == "green"){
           payload.Add("obj","1");
+          payload.Add("ctr",GreenCount.ToString());
         }
         if(selectedButton == "blue"){
           payload.Add("obj","2");
+          payload.Add("ctr",BlueCount.ToString());
         }
 
         payload.Add("resh", canv.GetComponent<RectTransform>().rect.height.ToString());
@@ -447,12 +547,15 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
 
     if(selectedButton == "red"){
       payload.Add("obj","0");
+      payload.Add("ctr",RedCount.ToString());
     }
     if(selectedButton == "green"){
       payload.Add("obj","1");
+      payload.Add("ctr",GreenCount.ToString());
     }
     if(selectedButton == "blue"){
       payload.Add("obj","2");
+      payload.Add("ctr",BlueCount.ToString());
     }
 
     string result = string.Join(",", payload.Select(x => '"' + x.Key + '"' + ": " + '"' + x.Value + '"'));
@@ -640,20 +743,41 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
   private void InstObj(Vector3 wp)
   {
     ang.x = 90;
-
+    string mclr = "";
+    var ctr = "";
+    string tempKey2 = "";
     if (selectedButton == "green")
     {
       tp = obj1;
+      mclr = "Green";
+      ctr = GreenCount.ToString();
+      GreenCount+=1;
+      tempKey2 = "1";
     }
     else if (selectedButton == "red")
     {
       tp = obj2;
+      mclr = "Red";
+      ctr = RedCount.ToString();
+      RedCount +=1;
+      tempKey2 = "0";
     }
     else if (selectedButton == "blue")
     {
       tp = obj3;
+      mclr = "Blue";
+      ctr = BlueCount.ToString();
+      BlueCount+=1;
+      tempKey2 = "2";
     }
-    Instantiate(tp, wp, Quaternion.Euler(ang));
+    var gob = Instantiate(tp, wp, Quaternion.Euler(ang));
+    GameObject ttxt = gob.transform.GetChild(0).gameObject;
+    TextMeshPro mText = ttxt.GetComponent<TextMeshPro>();
+    mText.text = mclr+" "+ctr;
+    string tempKey = tempKey2 + ctr;
+    placed_markers[tempKey] = gob;
+
+    
     //GameObject c = Instantiate(circle,wp,Quaternion.Euler(ang));
     //placed_objects.Add(c);
     //Vector3 scaleChange = new Vector3(curscl, curscl, curscl);

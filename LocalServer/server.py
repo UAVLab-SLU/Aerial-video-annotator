@@ -120,7 +120,8 @@ while True:
             db_di ={
                  'lat' : float(str(intersect_LLA[0])),
                 'lon' : float(str(intersect_LLA[1])),
-                'obj':int(dat["obj"])
+                'obj' : int(dat["obj"]),
+                'ctr' : int(dat["ctr"])
             }
             post_data(db_di)
 
