@@ -28,7 +28,7 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
   public GameObject obj2;
   public GameObject obj3;
   private GameObject tp;
-  public List<GameObject> placed_objects = new List<GameObject>();
+  private List<GameObject> placed_objects = new List<GameObject>();
   public GameObject circle;
 
   public RawImage grid;
@@ -46,12 +46,18 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
 
   private int curgrid;
 
-  private Dictionary<string,GameObject> placed_markers = new Dictionary<string, GameObject>();
+  private Dictionary<string, GameObject> placed_markers = new Dictionary<string, GameObject>();
+
+
   private int selectedGrid;
 
-  Dictionary<string,Location> locations;
+  Dictionary<string, Location> locations;
 
   TextMeshProUGUI dg;
+
+  public TextMeshProUGUI dist;
+
+  public TextMeshProUGUI nextMv;
   float lat = 0.0f;
   float lon = 0.0f;
   float alt = 0.0f;
@@ -82,12 +88,21 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
 
   private int RedCount;
 
+  private string OSnextMove;
+
+
 
 
   bool Po;
 
+  bool fetchedLocations;
+
   // string microPhn = Microphone.devices[0];
   public GameObject dialogue;
+
+  public GameObject nextMvNotif;
+
+  private GameObject circleMarker;
 
   void Start()
   {
@@ -103,11 +118,14 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
     GreenCount = 1;
     RedCount = 1;
     SetGrid();
+    OSnextMove = "";
 
+    circleMarker = Instantiate(circle, new Vector3(0, -200, 0), Quaternion.identity);
 
     selectedButton = "green";
     green.interactable = false;
     Po = true;
+    fetchedLocations = false;
 
     speechRecognizer = gameObject.AddComponent<SpeechRecognizer>();
     var languageModelProvider = gameObject.AddComponent<StreamingAssetsLanguageModelProvider>();
@@ -141,133 +159,184 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
         };
     startRecord();
     StartCoroutine(GetOSLocation());
-    StartCoroutine(GetNextMove());
-     
+    // StartCoroutine(GetNextMove());
+
   }
 
   IEnumerator GetNextMove()
-    {   
-        while(true){
+  {
+    while (true)
+    {
 
-          // if(!Po)
-          // {
-            using (UnityWebRequest webRequest = UnityWebRequest.Get("https://uavlab-98a0c-default-rtdb.firebaseio.com/nextMove.json"))
-            {
-                // Request and wait for the desired page.
-                yield return webRequest.SendWebRequest();
-                if (webRequest.result == UnityWebRequest.Result.ConnectionError)
-                {
-                    Debug.Log(": Error: " + webRequest.error);
-                }
-                else
-                {
-                    Debug.Log($"{webRequest.downloadHandler.text}------");
-                }
-            }
-          // }
-          yield return new WaitForSeconds(2);
-        }
-        
-    }
-
-  IEnumerator GetOSLocation()
-    {   
-        while(true){
-
-          if(!Po)
+      if (!Po)
+      {
+        if (fetchedLocations)
+        {
+          using (UnityWebRequest webRequest = UnityWebRequest.Get("https://uavlab-98a0c-default-rtdb.firebaseio.com/nextMove.json"))
           {
-            using (UnityWebRequest webRequest = UnityWebRequest.Get("https://uavlab-98a0c-default-rtdb.firebaseio.com/OSlocation.json"))
+            // Request and wait for the desired page.
+            yield return webRequest.SendWebRequest();
+            if (webRequest.result == UnityWebRequest.Result.ConnectionError)
             {
-                // Request and wait for the desired page.
-                yield return webRequest.SendWebRequest();
-                if (webRequest.result == UnityWebRequest.Result.ConnectionError)
+              Debug.Log(": Error: " + webRequest.error);
+            }
+            else
+            {
+
+              foreach (var key in placed_markers.Keys)
+              {
+                Debug.Log($"----------{key}");
+              }
+              Debug.Log($"{webRequest.downloadHandler.text}------");
+              var values = JsonConvert.DeserializeObject<Dictionary<string, int>>(webRequest.downloadHandler.text);
+              var tempNextMove = values["color"].ToString() + values["num"].ToString();
+              if (placed_markers.ContainsKey(tempNextMove))
+              {
+                var tempGobj = placed_markers[tempNextMove];
+
+                string color = "";
+                if (values["color"] == 0)
                 {
-                    Debug.Log(": Error: " + webRequest.error);
+                  color = "Red";
                 }
-                else
+                if (values["color"] == 1)
                 {
-                    // Print out the received data.
-                    // Debug.Log("Received: " + webRequest.downloadHandler.text);
-                    OSLocation osl = JsonConvert.DeserializeObject<OSLocation>(webRequest.downloadHandler.text);
-                    // Debug.Log($"Location{osl.lat}, {osl.lon}");
-                   
-                    var os_pos = GPSEncoder.GPSToUCS((float)osl.lat, (float)osl.lon);
-                    os_pos.y = 0f;
-                    OSPerson.transform.position = os_pos;
-                    // GPSEncoder.SetLocalOrigin(new Vector2((float)osl.lat,(float)osl.lon));
+                  color = "Green";
                 }
+                if (values["color"] == 2)
+                {
+                  color = "Blue";
+                }
+                if (tempNextMove != OSnextMove)
+                {
+                  Debug.Log($"NextMove changed");
+                  var dobj = Instantiate(nextMvNotif);
+                  dg = dobj.GetComponentInChildren<TextMeshProUGUI>();
+                  dg.text = "OnSite Operator next move changed to " + color + " " + values["num"].ToString();
+                  circleMarker.transform.position = tempGobj.transform.position;
+                  circleMarker.transform.rotation = tempGobj.transform.rotation;
+                  Destroy(dobj, 3);
+                  OSnextMove = tempNextMove;
+                }
+                float distance = Vector3.Distance(tempGobj.transform.position, OSPerson.transform.position);
+                dist.text = "Onsite Operator is " + distance + " from target";
+                nextMv.text = "Onsite Operator next Move: " + color + " " + values["num"].ToString();
+              }
             }
           }
-          yield return new WaitForSeconds(1);
         }
-        
+      }
+      yield return new WaitForSeconds(1);
     }
 
-     IEnumerator GetLocations()
+  }
+
+  IEnumerator GetOSLocation()
+  {
+    while (true)
     {
-        
-          if(!Po)
+
+      if (!Po)
+      {
+
+        using (UnityWebRequest webRequest = UnityWebRequest.Get("https://uavlab-98a0c-default-rtdb.firebaseio.com/OSlocation.json"))
+        {
+          // Request and wait for the desired page.
+          yield return webRequest.SendWebRequest();
+          if (webRequest.result == UnityWebRequest.Result.ConnectionError)
           {
-            using (UnityWebRequest webRequest = UnityWebRequest.Get("https://uavlab-98a0c-default-rtdb.firebaseio.com/location.json"))
-            {
-                yield return webRequest.SendWebRequest();
-                if (webRequest.result == UnityWebRequest.Result.ConnectionError)
-                {
-                    // Debug.Log(": Error: " + webRequest.error);
-                }
-                else
-                {
-                    // Print out the received data.
-                    // Debug.Log("Received: " + webRequest.downloadHandler.text);
-                    locations = JsonConvert.DeserializeObject<Dictionary<string, Location>>(webRequest.downloadHandler.text);
-                    // Debug.Log(locations.Count);
-                    string color = "";
-                    string num = "";
-                    GameObject tempG = obj1;
-                    foreach (var key in locations.Keys)
-                    {   
-                      num = locations[key].ctr.ToString();
-                        if(locations[key].obj == 0){
-                            tempG = obj2;
-                            color = "Red";
-                            if(locations[key].ctr > RedCount){
-                              RedCount = locations[key].ctr;
-                            }
-                        }
-                        if(locations[key].obj == 1){
-                            tempG = obj1;
-                            color = "Green";
-                            if(locations[key].ctr > GreenCount){
-                              GreenCount = locations[key].ctr;
-                            }
-                        }
-                        if(locations[key].obj == 2){
-                            tempG = obj3;
-                            color = "Blue";
-                            if(locations[key].ctr > BlueCount){
-                              BlueCount = locations[key].ctr;
-                            }
-                        }
-                        var pos = GPSEncoder.GPSToUCS((float)locations[key].lat,(float)locations[key].lon);
-                        var gob = Instantiate(tempG, pos, Quaternion.Euler(ang));
-                        GameObject ttxt = gob.transform.GetChild(0).gameObject;
-                        TextMeshPro mText = ttxt.GetComponent<TextMeshPro>();
-                        mText.text = color+" "+num;
-                        string tempKey = locations[key].obj.ToString() + locations[key].ctr.ToString();
-                        placed_markers[tempKey] = gob;
-                    
-                    }
-                    // Debug.Log("iiiiiiiiii");
-                    // Li.LO(locations);
-                    
-                }
-            }
-            // Debug.Log("Location fetched");
-            yield return null;
-          
-            
+            Debug.Log(": Error: " + webRequest.error);
+          }
+          else
+          {
+            // Print out the received data.
+            // Debug.Log("Received: " + webRequest.downloadHandler.text);
+            OSLocation osl = JsonConvert.DeserializeObject<OSLocation>(webRequest.downloadHandler.text);
+            // Debug.Log($"Location{osl.lat}, {osl.lon}");
+
+            var os_pos = GPSEncoder.GPSToUCS((float)osl.lat, (float)osl.lon);
+            os_pos.y = 0f;
+            OSPerson.transform.position = os_pos;
+            // GPSEncoder.SetLocalOrigin(new Vector2((float)osl.lat,(float)osl.lon));
+          }
         }
+      }
+      yield return new WaitForSeconds(1);
     }
+
+  }
+
+  IEnumerator GetLocations()
+  {
+
+    if (!Po)
+    {
+      using (UnityWebRequest webRequest = UnityWebRequest.Get("https://uavlab-98a0c-default-rtdb.firebaseio.com/location.json"))
+      {
+        yield return webRequest.SendWebRequest();
+        if (webRequest.result == UnityWebRequest.Result.ConnectionError)
+        {
+          // Debug.Log(": Error: " + webRequest.error);
+        }
+        else
+        {
+          // Print out the received data.
+          // Debug.Log("Received: " + webRequest.downloadHandler.text);
+          locations = JsonConvert.DeserializeObject<Dictionary<string, Location>>(webRequest.downloadHandler.text);
+          // Debug.Log(locations.Count);
+          string color = "";
+          string num = "";
+          GameObject tempG = obj1;
+          foreach (var key in locations.Keys)
+          {
+            num = locations[key].ctr.ToString();
+            if (locations[key].obj == 0)
+            {
+              tempG = obj2;
+              color = "Red";
+              if (locations[key].ctr > RedCount)
+              {
+                RedCount = locations[key].ctr;
+              }
+            }
+            if (locations[key].obj == 1)
+            {
+              tempG = obj1;
+              color = "Green";
+              if (locations[key].ctr > GreenCount)
+              {
+                GreenCount = locations[key].ctr;
+              }
+            }
+            if (locations[key].obj == 2)
+            {
+              tempG = obj3;
+              color = "Blue";
+              if (locations[key].ctr > BlueCount)
+              {
+                BlueCount = locations[key].ctr;
+              }
+            }
+            var pos = GPSEncoder.GPSToUCS((float)locations[key].lat, (float)locations[key].lon);
+            var gob = Instantiate(tempG, pos, Quaternion.Euler(ang));
+            GameObject ttxt = gob.transform.GetChild(0).gameObject;
+            TextMeshPro mText = ttxt.GetComponent<TextMeshPro>();
+            mText.text = color + " " + num;
+            string tempKey = locations[key].obj.ToString() + locations[key].ctr.ToString();
+            placed_markers[tempKey] = gob;
+
+          }
+          // Debug.Log("iiiiiiiiii");
+          // Li.LO(locations);
+          fetchedLocations = true;
+        }
+      }
+      // Debug.Log("Location fetched");
+      yield return null;
+
+
+    }
+  }
 
 
   //Update is called once per frame
@@ -328,13 +397,15 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
         // InstObj(world_p);
         Debug.Log("Object placed");
         Po = false;
-        Vector3 ostemp = new Vector3(0f,-100f,0f);
+        Vector3 ostemp = new Vector3(0f, -100f, 0f);
         Vector3 osang = new Vector3();
         osang.x = 90;
-        OSPerson = Instantiate(OSPerson,ostemp, Quaternion.Euler(osang));
+        OSPerson = Instantiate(OSPerson, ostemp, Quaternion.Euler(osang));
         StartCoroutine(GetLocations());
+        StartCoroutine(GetNextMove());
       }
-     
+
+
       if (!float.IsNaN(pitch) && !float.IsNaN(roll) && !float.IsNaN(yaw))
       {
         ang.x = -1.0f * pitch;
@@ -438,17 +509,20 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
         // payload.Add("y", rotat.y.ToString());
         // payload.Add("z", rotat.z.ToString());
 
-        if(selectedButton == "red"){
-          payload.Add("obj","0");
-          payload.Add("ctr",RedCount.ToString());
+        if (selectedButton == "red")
+        {
+          payload.Add("obj", "0");
+          payload.Add("ctr", RedCount.ToString());
         }
-        if(selectedButton == "green"){
-          payload.Add("obj","1");
-          payload.Add("ctr",GreenCount.ToString());
+        if (selectedButton == "green")
+        {
+          payload.Add("obj", "1");
+          payload.Add("ctr", GreenCount.ToString());
         }
-        if(selectedButton == "blue"){
-          payload.Add("obj","2");
-          payload.Add("ctr",BlueCount.ToString());
+        if (selectedButton == "blue")
+        {
+          payload.Add("obj", "2");
+          payload.Add("ctr", BlueCount.ToString());
         }
 
         payload.Add("resh", canv.GetComponent<RectTransform>().rect.height.ToString());
@@ -529,8 +603,8 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
   {
     var dobj = Instantiate(dialogue);
     dg = dobj.GetComponentInChildren<TextMeshProUGUI>();
-    dg.text = clr+" marker is placed in grid "+grd;
-    Destroy(dobj,3);
+    dg.text = clr + " marker is placed in grid " + grd;
+    Destroy(dobj, 3);
     Dictionary<string, string> payload = new Dictionary<string, string>();
     payload.Add("xpos", x.ToString());
     payload.Add("ypos", y.ToString());
@@ -545,17 +619,20 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
     payload.Add("resh", canv.GetComponent<RectTransform>().rect.height.ToString());
     payload.Add("resw", canv.GetComponent<RectTransform>().rect.width.ToString());
 
-    if(selectedButton == "red"){
-      payload.Add("obj","0");
-      payload.Add("ctr",RedCount.ToString());
+    if (selectedButton == "red")
+    {
+      payload.Add("obj", "0");
+      payload.Add("ctr", RedCount.ToString());
     }
-    if(selectedButton == "green"){
-      payload.Add("obj","1");
-      payload.Add("ctr",GreenCount.ToString());
+    if (selectedButton == "green")
+    {
+      payload.Add("obj", "1");
+      payload.Add("ctr", GreenCount.ToString());
     }
-    if(selectedButton == "blue"){
-      payload.Add("obj","2");
-      payload.Add("ctr",BlueCount.ToString());
+    if (selectedButton == "blue")
+    {
+      payload.Add("obj", "2");
+      payload.Add("ctr", BlueCount.ToString());
     }
 
     string result = string.Join(",", payload.Select(x => '"' + x.Key + '"' + ": " + '"' + x.Value + '"'));
@@ -573,7 +650,7 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
   private void OnResult(Result result)
   {
     Debug.Log(result.text);
-    
+
     string[] keywords = result.text.Split(' ');
 
     Processtext(keywords);
@@ -581,7 +658,8 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
   }
 
 
-  private void Processtext(string[] keywords){
+  private void Processtext(string[] keywords)
+  {
 
     int width = (int)canv.GetComponent<RectTransform>().rect.width;
     int height = (int)canv.GetComponent<RectTransform>().rect.height;
@@ -686,8 +764,9 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
     }
     Debug.Log(finalGridNum);
     int tempSN = curgrid + 1;
-    if (tempSN>5){
-        tempSN = 5;
+    if (tempSN > 5)
+    {
+      tempSN = 5;
     }
     var midpoints = CalculateMidpoints(width, height, tempSN);
 
@@ -696,19 +775,19 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
       Debug.Log(midpoints[finalGridNum - 1].Item1);
       Debug.Log(midpoints[finalGridNum - 1].Item2);
       selectedButton = finalColor;
-      sendUserInput(midpoints[finalGridNum - 1].Item1,midpoints[finalGridNum - 1].Item2,finalColor,finalGrid);
+      sendUserInput(midpoints[finalGridNum - 1].Item1, midpoints[finalGridNum - 1].Item2, finalColor, finalGrid);
       if (selectedButton == "green")
-        {
-            GreenButton();
-        }
-        else if (selectedButton == "red")
-        {
-            RedButton();
-        }
-        else if (selectedButton == "blue")
-        {
-            BlueButton();
-        }
+      {
+        GreenButton();
+      }
+      else if (selectedButton == "red")
+      {
+        RedButton();
+      }
+      else if (selectedButton == "blue")
+      {
+        BlueButton();
+      }
     }
     else
     {
@@ -751,7 +830,7 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
       tp = obj1;
       mclr = "Green";
       ctr = GreenCount.ToString();
-      GreenCount+=1;
+      GreenCount += 1;
       tempKey2 = "1";
     }
     else if (selectedButton == "red")
@@ -759,7 +838,7 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
       tp = obj2;
       mclr = "Red";
       ctr = RedCount.ToString();
-      RedCount +=1;
+      RedCount += 1;
       tempKey2 = "0";
     }
     else if (selectedButton == "blue")
@@ -767,17 +846,17 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
       tp = obj3;
       mclr = "Blue";
       ctr = BlueCount.ToString();
-      BlueCount+=1;
+      BlueCount += 1;
       tempKey2 = "2";
     }
     var gob = Instantiate(tp, wp, Quaternion.Euler(ang));
     GameObject ttxt = gob.transform.GetChild(0).gameObject;
     TextMeshPro mText = ttxt.GetComponent<TextMeshPro>();
-    mText.text = mclr+" "+ctr;
+    mText.text = mclr + " " + ctr;
     string tempKey = tempKey2 + ctr;
     placed_markers[tempKey] = gob;
 
-    
+
     //GameObject c = Instantiate(circle,wp,Quaternion.Euler(ang));
     //placed_objects.Add(c);
     //Vector3 scaleChange = new Vector3(curscl, curscl, curscl);
