@@ -113,17 +113,19 @@ while True:
             di2 = {
                 'lat' : str(intersect_LLA[0]),
                 'lon' : str(intersect_LLA[1]),
-                'alt' : str(intersect_LLA[2])
+                'alt' : str(intersect_LLA[2]),
+                'obj' : str(dat["obj"]),
+                'ctr' : str(dat["ctr"])
             }
             sock2.SendData(json.dumps(di2).encode('utf-8'))
 
-            db_di ={
-                 'lat' : float(str(intersect_LLA[0])),
-                'lon' : float(str(intersect_LLA[1])),
-                'obj' : int(dat["obj"]),
-                'ctr' : int(dat["ctr"])
-            }
-            post_data(db_di)
+            # db_di ={
+            #      'lat' : float(str(intersect_LLA[0])),
+            #     'lon' : float(str(intersect_LLA[1])),
+            #     'obj' : int(dat["obj"]),
+            #     'ctr' : int(dat["ctr"])
+            # }
+            # post_data(db_di)
 
     dat2 = sock2.ReadReceivedData() # read data
     #implement timer function

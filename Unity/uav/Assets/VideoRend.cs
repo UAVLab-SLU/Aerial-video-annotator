@@ -13,7 +13,7 @@ using Recognissimo.Components;
 using TMPro;
 using System.Collections;
 using UnityEngine.Networking;
-
+using Proyecto26;
 
 
 public class VideoRend : MonoBehaviour//,IPointerEnterHandler
@@ -473,6 +473,26 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
       Debug.Log(world_pos2);
       InstObj(world_pos2);
 
+
+      Location lpl = new Location();
+      lpl.ctr = int.Parse(values2["ctr"]);
+      lpl.obj = int.Parse(values2["obj"]);
+      lpl.lat = Convert.ToDouble(values2["lat"]);
+      lpl.lon = Convert.ToDouble(values2["lon"]);
+
+      WWWForm form = new WWWForm();
+      
+      Dictionary<string,double> pl = new Dictionary<string, double>();
+      var tempVal = JsonConvert.SerializeObject(lpl);
+      form.AddField("lat",values2["lat"].ToString());
+      form.AddField("lon",values2["lon"].ToString());
+      form.AddField("obj",values2["obj"].ToString());
+      form.AddField("ctr",values2["ctr"].ToString());
+      // StartCoroutine(Upload(values2["lat"].ToString(),values2["lon"].ToString(),values2["obj"].ToString(),values2["ctr"].ToString()));
+      RestClient.Post<Location>("https://uavlab-98a0c-default-rtdb.firebaseio.com/location.json",tempVal).Then(response =>{
+                Debug.Log(response);
+            });
+
     }
 
     //Placing object when user clicks on the screen
@@ -538,6 +558,28 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
 
   }
 
+  IEnumerator Upload(string lat ,string lon,string obj,string ctr)
+    {
+        WWWForm form = new WWWForm();
+        form.AddField("lat",lat);
+        form.AddField("lon",lon);
+        form.AddField("obj",obj);
+        form.AddField("ctr",ctr);
+
+        using (UnityWebRequest www = UnityWebRequest.Post("https://uavlab-98a0c-default-rtdb.firebaseio.com/location.json", form))
+        {
+            yield return www.SendWebRequest();
+
+            if (www.result != UnityWebRequest.Result.Success)
+            {
+                Debug.Log(www.error);
+            }
+            else
+            {
+                Debug.Log("Upload complete!");
+            }
+        }
+    }
 
 
   private void ScaleObjects(float scale)
