@@ -218,9 +218,10 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
                   Destroy(dobj, 3);
                   OSnextMove = tempNextMove;
                 }
-                float distance = Vector3.Distance(tempGobj.transform.position, OSPerson.transform.position);
-                dist.text = "Onsite Operator is " + distance + " from target";
-                nextMv.text = "Onsite Operator next Move: " + color + " " + values["num"].ToString();
+                float distance = 0f;
+                distance = Vector3.Distance(tempGobj.transform.position, OSPerson.transform.position);
+                // dist.text = "Onsite Operator is " + distance + " from target";
+                nextMv.text = "Onsite Operator next Move: " + color + " " + values["num"].ToString()+" and is "+distance + "m from target";
               }
             }
           }
@@ -289,7 +290,9 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
           GameObject tempG = obj1;
           foreach (var key in locations.Keys)
           {
+           
             num = locations[key].ctr.ToString();
+            Debug.Log($"Locationnn---{locations[key].obj},-----{num}");
             if (locations[key].obj == 0)
             {
               tempG = obj2;
@@ -297,6 +300,7 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
               if (locations[key].ctr > RedCount)
               {
                 RedCount = locations[key].ctr;
+                RedCount +=1;
               }
             }
             if (locations[key].obj == 1)
@@ -306,6 +310,7 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
               if (locations[key].ctr > GreenCount)
               {
                 GreenCount = locations[key].ctr;
+                GreenCount +=1;
               }
             }
             if (locations[key].obj == 2)
@@ -315,6 +320,7 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
               if (locations[key].ctr > BlueCount)
               {
                 BlueCount = locations[key].ctr;
+                BlueCount +=1;
               }
             }
             var pos = GPSEncoder.GPSToUCS((float)locations[key].lat, (float)locations[key].lon);
@@ -331,7 +337,7 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
           fetchedLocations = true;
         }
       }
-      // Debug.Log("Location fetched");
+      Debug.Log($"Counters {RedCount},{GreenCount}");
       yield return null;
 
 
