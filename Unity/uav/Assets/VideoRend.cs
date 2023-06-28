@@ -16,7 +16,7 @@ using UnityEngine.Networking;
 using Proyecto26;
 
 
-public class VideoRend : MonoBehaviour//,IPointerEnterHandler
+public class VideoRend : MonoBehaviour
 {
   // Start is called before the first frame update
   public Canvas canv;
@@ -47,7 +47,6 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
   private int curgrid;
 
   private Dictionary<string, GameObject> placed_markers = new Dictionary<string, GameObject>();
-
 
   private int selectedGrid;
 
@@ -90,9 +89,6 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
 
   private string OSnextMove;
 
-
-
-
   bool Po;
 
   bool fetchedLocations;
@@ -127,6 +123,7 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
     Po = true;
     fetchedLocations = false;
 
+		//---------Speech Recognition setup.
     speechRecognizer = gameObject.AddComponent<SpeechRecognizer>();
     var languageModelProvider = gameObject.AddComponent<StreamingAssetsLanguageModelProvider>();
     var speechSource = gameObject.AddComponent<MicrophoneSpeechSource>();
@@ -148,6 +145,7 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
     // Handle events.
     // speechRecognizer.PartialResultReady.AddListener(OnPartialResult);
     speechRecognizer.ResultReady.AddListener(OnResult);
+		// List of dictionary words which Speech Recognizer looks for from user commands.
     speechRecognizer.Vocabulary = new List<string>
         {
             "one", "two", "three", "four", "five",
@@ -163,6 +161,7 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
 
   }
 
+	// Get Onsite Operator Next Move.
   IEnumerator GetNextMove()
   {
     while (true)
@@ -221,7 +220,7 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
                 float distance = 0f;
                 distance = Vector3.Distance(tempGobj.transform.position, OSPerson.transform.position);
                 // dist.text = "Onsite Operator is " + distance + " from target";
-                nextMv.text = "Onsite Operator next Move: " + color + " " + values["num"].ToString()+" and is "+distance + "m from target";
+                nextMv.text = "Onsite Operator next Move: " + color + " " + values["num"].ToString() + " and is " + distance + "m from target";
               }
             }
           }
@@ -232,6 +231,7 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
 
   }
 
+	// Get Onsite operator and update it every second.
   IEnumerator GetOSLocation()
   {
     while (true)
@@ -250,15 +250,12 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
           }
           else
           {
-            // Print out the received data.
-            // Debug.Log("Received: " + webRequest.downloadHandler.text);
+            
             OSLocation osl = JsonConvert.DeserializeObject<OSLocation>(webRequest.downloadHandler.text);
-            // Debug.Log($"Location{osl.lat}, {osl.lon}");
-
             var os_pos = GPSEncoder.GPSToUCS((float)osl.lat, (float)osl.lon);
             os_pos.y = 0f;
             OSPerson.transform.position = os_pos;
-            // GPSEncoder.SetLocalOrigin(new Vector2((float)osl.lat,(float)osl.lon));
+            
           }
         }
       }
@@ -267,6 +264,7 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
 
   }
 
+	// Get already placed locations from Firebase database.
   IEnumerator GetLocations()
   {
 
@@ -281,18 +279,14 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
         }
         else
         {
-          // Print out the received data.
-          // Debug.Log("Received: " + webRequest.downloadHandler.text);
           locations = JsonConvert.DeserializeObject<Dictionary<string, Location>>(webRequest.downloadHandler.text);
-          // Debug.Log(locations.Count);
           string color = "";
           string num = "";
           GameObject tempG = obj1;
+					// Creating respective markers for fetched locations and updating marker(Example, Green 1 to Green 4) count.
           foreach (var key in locations.Keys)
           {
-           
             num = locations[key].ctr.ToString();
-            Debug.Log($"Locationnn---{locations[key].obj},-----{num}");
             if (locations[key].obj == 0)
             {
               tempG = obj2;
@@ -300,7 +294,7 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
               if (locations[key].ctr > RedCount)
               {
                 RedCount = locations[key].ctr;
-                RedCount +=1;
+                RedCount += 1;
               }
             }
             if (locations[key].obj == 1)
@@ -310,7 +304,7 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
               if (locations[key].ctr > GreenCount)
               {
                 GreenCount = locations[key].ctr;
-                GreenCount +=1;
+                GreenCount += 1;
               }
             }
             if (locations[key].obj == 2)
@@ -320,7 +314,7 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
               if (locations[key].ctr > BlueCount)
               {
                 BlueCount = locations[key].ctr;
-                BlueCount +=1;
+                BlueCount += 1;
               }
             }
             var pos = GPSEncoder.GPSToUCS((float)locations[key].lat, (float)locations[key].lon);
@@ -332,15 +326,10 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
             placed_markers[tempKey] = gob;
 
           }
-          // Debug.Log("iiiiiiiiii");
-          // Li.LO(locations);
           fetchedLocations = true;
         }
       }
-      Debug.Log($"Counters {RedCount},{GreenCount}");
       yield return null;
-
-
     }
   }
 
@@ -348,15 +337,11 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
   //Update is called once per frame
   void Update()
   {
-
-
-
-    // UdpConnection to get frame and metadata
+		// Setting up UDP connection for receiving frames and metadata from drone.
     if (client.Available > 0)
     {
       byte[] data = client.Receive(ref endPoint);
       string text = Encoding.UTF8.GetString(data);
-      //Debug.Log(text);
       var values = JsonConvert.DeserializeObject<Dictionary<string, string>>(text);
       lat = (float)Convert.ToDouble(values["lat"]);
       lon = (float)Convert.ToDouble(values["lon"]);
@@ -378,17 +363,20 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
         SetGrid();
         ScaleObjects(curscl);
       }
+			// Quaternion(w,x,y,z) of drone rotation.
       w = (float)Convert.ToDouble(values["w"]);
       x = (float)Convert.ToDouble(values["x"]);
       y = (float)Convert.ToDouble(values["y"]);
       z = (float)Convert.ToDouble(values["z"]);
 
+			// converting drone postion in GPS to unity coordinates.
       var world_pos = GPSEncoder.GPSToUCS(lat, lon);
       world_pos.y = alt;
 
       pitch = (float)Convert.ToDouble(values["pitch"]);
       roll = (float)Convert.ToDouble(values["roll"]);
       yaw = (float)Convert.ToDouble(values["yaw"]);
+			// Setting up rawImage with the frame received from drone.(Simuating ground in unity by projecting this in clipping plane of main camera)
       if (values["image"] != null)
       {
         byte[] result = Convert.FromBase64String(values["image"]);
@@ -396,11 +384,12 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
         texture.LoadImage(result);
         image.texture = texture;
       }
+			//Boolean check to set if the stream from drone is received.
       if (Po)
       {
         GPSEncoder.SetLocalOrigin(new Vector2(lat, lon));
         var world_p = GPSEncoder.GPSToUCS(lat, lon);
-        // InstObj(world_p);
+        // InstObj(world_p); // Mark drones takeoff location.
         Debug.Log("Object placed");
         Po = false;
         Vector3 ostemp = new Vector3(0f, -100f, 0f);
@@ -411,14 +400,12 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
         StartCoroutine(GetNextMove());
       }
 
-
+			// Checks to validate data before manipulating gameobjects in Unity.
       if (!float.IsNaN(pitch) && !float.IsNaN(roll) && !float.IsNaN(yaw))
       {
         ang.x = -1.0f * pitch;
         ang.y = yaw;
         ang.z = roll;
-
-        // Debug.Log(ang);
         float tempv = (float)Math.PI / 180;
         if (ang.x > 90.0f)
         {
@@ -428,22 +415,19 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
         {
           ang.x = ang.x * -1.0f;
         }
-        // Debug.Log(ang.x);
+				// Projecting ground at hypotenuse of Drone height from ground and pitch of drone to simulate real world movement.
         float c = (90.0f - ang.x) * tempv;
         float tempang = (float)Math.Cos(c);
         float ht = alt / tempang;
-        // Debug.Log(alt);
-        // Debug.Log(ht);
         if (ht < 0.0f)
         {
           ht = -1.0f * ht;
         }
         canv.planeDistance = ht + 1;
-        // Debug.Log(canv.planeDistance);
       }
-
-
+			//Converting Quaternion from NED to ENU.
       rotat = new Quaternion(-y, z, -x, w);
+			// Validating data
       if (!float.IsNaN(rotat.x) && !float.IsNaN(rotat.y) && !float.IsNaN(rotat.z) && !float.IsNaN(rotat.w))
       {
         drone.transform.rotation = rotat;
@@ -462,18 +446,14 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
     // Udp connection to get GeoLocation 
     if (client2.Available > 0)
     {
-
-
       byte[] data2 = client2.Receive(ref endPoint);
       string text2 = Encoding.UTF8.GetString(data2);
-      // Debug.Log(text2);
       var values2 = JsonConvert.DeserializeObject<Dictionary<string, string>>(text2);
       lat2 = (float)Convert.ToDouble(values2["lat"]);
       lon2 = (float)Convert.ToDouble(values2["lon"]);
       alt2 = (float)Convert.ToDouble(values2["alt"]);
       var world_pos2 = GPSEncoder.GPSToUCS(lat2, lon2);
       world_pos2.y = 1.0f;
-      // var  temp = world_pos2.x;
       world_pos2.x = 1.0f * world_pos2.x;
       world_pos2.z = 1.0f * world_pos2.z;
       Debug.Log(world_pos2);
@@ -486,41 +466,32 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
       lpl.lat = Convert.ToDouble(values2["lat"]);
       lpl.lon = Convert.ToDouble(values2["lon"]);
 
-      WWWForm form = new WWWForm();
       
-      Dictionary<string,double> pl = new Dictionary<string, double>();
+
+      Dictionary<string, double> pl = new Dictionary<string, double>();
       var tempVal = JsonConvert.SerializeObject(lpl);
-      form.AddField("lat",values2["lat"].ToString());
-      form.AddField("lon",values2["lon"].ToString());
-      form.AddField("obj",values2["obj"].ToString());
-      form.AddField("ctr",values2["ctr"].ToString());
-      // StartCoroutine(Upload(values2["lat"].ToString(),values2["lon"].ToString(),values2["obj"].ToString(),values2["ctr"].ToString()));
-      RestClient.Post<Location>("https://uavlab-98a0c-default-rtdb.firebaseio.com/location.json",tempVal).Then(response =>{
-                Debug.Log(response);
-            });
+			// Creating a new entry for location in Firebase database.
+      RestClient.Post<Location>("https://uavlab-98a0c-default-rtdb.firebaseio.com/location.json", tempVal).Then(response =>
+      {
+        Debug.Log(response);
+      });
 
     }
 
     //Placing object when user clicks on the screen
     if (Input.GetMouseButtonDown(0))
     {
-
-
       // To prevent placing object when user clicks on a button
       PointerEventData pe = new PointerEventData(EventSystem.current);
       pe.position = Input.mousePosition;
       List<RaycastResult> resList = new List<RaycastResult>();
       EventSystem.current.RaycastAll(pe, resList);
-      // for(int i = 0;i<resList.Count;i++){
-      //     Debug.Log(resList[i]);
-      // }
-
+      
 
       Vector3 mousePos = Input.mousePosition;
       if (resList.Count == 1)
       {
-        // sendUserInput(mousePos.x,mousePos.y);
-
+       
         Dictionary<string, string> payload = new Dictionary<string, string>();
         var mouse_y = canv.GetComponent<RectTransform>().rect.height - mousePos.y;
         payload.Add("xpos", mousePos.x.ToString());
@@ -528,12 +499,6 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
         payload.Add("lat", lat.ToString());
         payload.Add("alt", alt.ToString());
         payload.Add("lon", lon.ToString());
-
-
-        // payload.Add("w", rotat.w.ToString());
-        // payload.Add("x", rotat.x.ToString());
-        // payload.Add("y", rotat.y.ToString());
-        // payload.Add("z", rotat.z.ToString());
 
         if (selectedButton == "red")
         {
@@ -563,29 +528,6 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
     }
 
   }
-
-  IEnumerator Upload(string lat ,string lon,string obj,string ctr)
-    {
-        WWWForm form = new WWWForm();
-        form.AddField("lat",lat);
-        form.AddField("lon",lon);
-        form.AddField("obj",obj);
-        form.AddField("ctr",ctr);
-
-        using (UnityWebRequest www = UnityWebRequest.Post("https://uavlab-98a0c-default-rtdb.firebaseio.com/location.json", form))
-        {
-            yield return www.SendWebRequest();
-
-            if (www.result != UnityWebRequest.Result.Success)
-            {
-                Debug.Log(www.error);
-            }
-            else
-            {
-                Debug.Log("Upload complete!");
-            }
-        }
-    }
 
 
   private void ScaleObjects(float scale)
@@ -646,7 +588,7 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
 
 
   }
-
+	// Placing object based on user voice input.
   void sendUserInput(float x, float y, string clr, string grd)
   {
     var dobj = Instantiate(dialogue);
@@ -660,10 +602,6 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
     payload.Add("alt", alt.ToString());
     payload.Add("lon", lon.ToString());
 
-    // payload.Add("w", w.ToString());
-    // payload.Add("x", x.ToString());
-    // payload.Add("y", y.ToString());
-    // payload.Add("z", z.ToString());
     payload.Add("resh", canv.GetComponent<RectTransform>().rect.height.ToString());
     payload.Add("resw", canv.GetComponent<RectTransform>().rect.width.ToString());
 
@@ -695,6 +633,7 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
 
   }
 
+	// Record user voice inputs and place objects in respective grid.
   private void OnResult(Result result)
   {
     Debug.Log(result.text);
@@ -705,10 +644,10 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
 
   }
 
-
+	// Process user voice transcript to determine grid and color of object to be placed.
   private void Processtext(string[] keywords)
   {
-
+		// Resolution of screen 
     int width = (int)canv.GetComponent<RectTransform>().rect.width;
     int height = (int)canv.GetComponent<RectTransform>().rect.height;
     string[] colors = { "green", "red", "blue" };
@@ -730,12 +669,14 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
         };
 
     string[] selectedNumber = keywords.Intersect(numbers).ToArray();
-    Debug.Log(selectedNumber.Length);
+		// Condition to check if there are valid numbers in user voice input. (1 and 2 are valid inputs)
+		//(2 is valid because twenty three is combination of twenty and three)
     if (selectedNumber.Length < 1 || selectedNumber.Length > 2)
     {
       Debug.Log("Grid Number error");
       return;
     }
+		// Handling case of numbers greater than twenty.
     if (selectedNumber.Contains("twenty"))
     {
       if (selectedNumber.Length == 1)
@@ -792,7 +733,6 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
     }
     Debug.Log(finalGrid);
     Debug.Log(finalColor);
-
     Dictionary<string, int> numberDictionary = new Dictionary<string, int>
     {
         { "one", 1 },{ "two", 2 },{ "three", 3 },{ "four", 4 },{ "five", 5 },
@@ -844,7 +784,7 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
     }
   }
 
-
+	// Calculating midpoints of each cell in NxN grid.
   private Dictionary<int, Tuple<int, int>> CalculateMidpoints(int width, int height, int gridsize)
   {
     var midpoints = new Dictionary<int, Tuple<int, int>>();
@@ -867,6 +807,7 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
     return midpoints;
   }
 
+	// Creating markers.
   private void InstObj(Vector3 wp)
   {
     ang.x = 90;
@@ -919,6 +860,7 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
     blue.interactable = true;
   }
 
+	// Changing grid based on altitude(plane distance) of drone from ground.
   private void SetGrid()
   {
     switch (curgrid)
