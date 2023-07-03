@@ -108,11 +108,11 @@ public class VideoRend : MonoBehaviour
     green.onClick.AddListener(GreenButton);
     blue.onClick.AddListener(BlueButton);
     red.onClick.AddListener(RedButton);
-
+    blue.gameObject.SetActive(false);
     curgrid = 1;
-    BlueCount = 1;
-    GreenCount = 1;
-    RedCount = 1;
+    BlueCount = 0;
+    GreenCount = 0;
+    RedCount = 0;
     SetGrid();
     OSnextMove = "";
 
@@ -196,11 +196,11 @@ public class VideoRend : MonoBehaviour
                 string color = "";
                 if (values["color"] == 0)
                 {
-                  color = "Red";
+                  color = "Gun";
                 }
                 if (values["color"] == 1)
                 {
-                  color = "Green";
+                  color = "Victim";
                 }
                 if (values["color"] == 2)
                 {
@@ -290,21 +290,21 @@ public class VideoRend : MonoBehaviour
             if (locations[key].obj == 0)
             {
               tempG = obj2;
-              color = "Red";
+              color = "Gun";
               if (locations[key].ctr > RedCount)
               {
                 RedCount = locations[key].ctr;
-                RedCount += 1;
+                // RedCount += 1;
               }
             }
             if (locations[key].obj == 1)
             {
               tempG = obj1;
-              color = "Green";
+              color = "Victim";
               if (locations[key].ctr > GreenCount)
               {
                 GreenCount = locations[key].ctr;
-                GreenCount += 1;
+                // GreenCount += 1;
               }
             }
             if (locations[key].obj == 2)
@@ -314,7 +314,7 @@ public class VideoRend : MonoBehaviour
               if (locations[key].ctr > BlueCount)
               {
                 BlueCount = locations[key].ctr;
-                BlueCount += 1;
+                // BlueCount += 1;
               }
             }
             var pos = GPSEncoder.GPSToUCS((float)locations[key].lat, (float)locations[key].lon);
@@ -329,6 +329,10 @@ public class VideoRend : MonoBehaviour
           fetchedLocations = true;
         }
       }
+      Debug.Log($"{RedCount}----,{GreenCount}");
+      RedCount +=1;
+      BlueCount +=1;
+      GreenCount +=1;
       yield return null;
     }
   }
@@ -817,7 +821,7 @@ public class VideoRend : MonoBehaviour
     if (selectedButton == "green")
     {
       tp = obj1;
-      mclr = "Green";
+      mclr = "Victim";
       ctr = GreenCount.ToString();
       GreenCount += 1;
       tempKey2 = "1";
@@ -825,7 +829,7 @@ public class VideoRend : MonoBehaviour
     else if (selectedButton == "red")
     {
       tp = obj2;
-      mclr = "Red";
+      mclr = "Gun";
       ctr = RedCount.ToString();
       RedCount += 1;
       tempKey2 = "0";
