@@ -153,7 +153,8 @@ public class VideoRend : MonoBehaviour
             "eleven", "twelve", "thirteen", "fourteen", "fifteen",
             "sixteen", "seventeen", "eighteen", "nineteen", "twenty",
             "twenty one", "twenty two", "twenty three", "twenty four", "twenty five",
-            "green", "blue", "red",
+            // "green", "blue", "red",
+            "victim", "gun"
         };
     startRecord();
     StartCoroutine(GetOSLocation());
@@ -654,7 +655,7 @@ public class VideoRend : MonoBehaviour
 		// Resolution of screen 
     int width = (int)canv.GetComponent<RectTransform>().rect.width;
     int height = (int)canv.GetComponent<RectTransform>().rect.height;
-    string[] colors = { "green", "red", "blue" };
+    string[] colors = { "victim", "gun" };
     string finalColor = "";
     string finalGrid = "";
     int finalGridNum = 0;
@@ -766,7 +767,12 @@ public class VideoRend : MonoBehaviour
     {
       Debug.Log(midpoints[finalGridNum - 1].Item1);
       Debug.Log(midpoints[finalGridNum - 1].Item2);
-      selectedButton = finalColor;
+      if(finalColor == "victim"){
+        selectedButton = "green";
+      }
+      if(finalColor == "gun"){
+        selectedButton = "red";
+      }
       sendUserInput(midpoints[finalGridNum - 1].Item1, midpoints[finalGridNum - 1].Item2, finalColor, finalGrid);
       if (selectedButton == "green")
       {
