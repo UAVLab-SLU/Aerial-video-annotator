@@ -123,7 +123,7 @@ public class VideoRend : MonoBehaviour
     Po = true;
     fetchedLocations = false;
 
-		//---------Speech Recognition setup.
+    //---------Speech Recognition setup.
     speechRecognizer = gameObject.AddComponent<SpeechRecognizer>();
     var languageModelProvider = gameObject.AddComponent<StreamingAssetsLanguageModelProvider>();
     var speechSource = gameObject.AddComponent<MicrophoneSpeechSource>();
@@ -145,7 +145,7 @@ public class VideoRend : MonoBehaviour
     // Handle events.
     // speechRecognizer.PartialResultReady.AddListener(OnPartialResult);
     speechRecognizer.ResultReady.AddListener(OnResult);
-		// List of dictionary words which Speech Recognizer looks for from user commands.
+    // List of dictionary words which Speech Recognizer looks for from user commands.
     speechRecognizer.Vocabulary = new List<string>
         {
             "one", "two", "three", "four", "five",
@@ -162,7 +162,7 @@ public class VideoRend : MonoBehaviour
 
   }
 
-	// Get Onsite Operator Next Move.
+  // Get Onsite Operator Next Move.
   IEnumerator GetNextMove()
   {
     while (true)
@@ -232,7 +232,7 @@ public class VideoRend : MonoBehaviour
 
   }
 
-	// Get Onsite operator and update it every second.
+  // Get Onsite operator and update it every second.
   IEnumerator GetOSLocation()
   {
     while (true)
@@ -251,12 +251,12 @@ public class VideoRend : MonoBehaviour
           }
           else
           {
-            
+
             OSLocation osl = JsonConvert.DeserializeObject<OSLocation>(webRequest.downloadHandler.text);
             var os_pos = GPSEncoder.GPSToUCS((float)osl.lat, (float)osl.lon);
             os_pos.y = 0f;
             OSPerson.transform.position = os_pos;
-            
+
           }
         }
       }
@@ -265,7 +265,7 @@ public class VideoRend : MonoBehaviour
 
   }
 
-	// Get already placed locations from Firebase database.
+  // Get already placed locations from Firebase database.
   IEnumerator GetLocations()
   {
 
@@ -284,56 +284,61 @@ public class VideoRend : MonoBehaviour
           string color = "";
           string num = "";
           GameObject tempG = obj1;
-					// Creating respective markers for fetched locations and updating marker(Example, Green 1 to Green 4) count.
-          foreach (var key in locations.Keys)
+          // Creating respective markers for fetched locations and updating marker(Example, Green 1 to Green 4) count.
+          if (locations != null)
           {
-            num = locations[key].ctr.ToString();
-            if (locations[key].obj == 0)
+            foreach (var key in locations.Keys)
             {
-              tempG = obj2;
-              color = "Gun";
-              if (locations[key].ctr > RedCount)
+              num = locations[key].ctr.ToString();
+              if (locations[key].obj == 0)
               {
-                RedCount = locations[key].ctr;
-                // RedCount += 1;
+                tempG = obj2;
+                color = "Gun";
+                if (locations[key].ctr > RedCount)
+                {
+                  RedCount = locations[key].ctr;
+                  // RedCount += 1;
+                }
               }
-            }
-            if (locations[key].obj == 1)
-            {
-              tempG = obj1;
-              color = "Victim";
-              if (locations[key].ctr > GreenCount)
+              if (locations[key].obj == 1)
               {
-                GreenCount = locations[key].ctr;
-                // GreenCount += 1;
+                tempG = obj1;
+                color = "Victim";
+                if (locations[key].ctr > GreenCount)
+                {
+                  GreenCount = locations[key].ctr;
+                  // GreenCount += 1;
+                }
               }
-            }
-            if (locations[key].obj == 2)
-            {
-              tempG = obj3;
-              color = "Blue";
-              if (locations[key].ctr > BlueCount)
+              if (locations[key].obj == 2)
               {
-                BlueCount = locations[key].ctr;
-                // BlueCount += 1;
+                tempG = obj3;
+                color = "Blue";
+                if (locations[key].ctr > BlueCount)
+                {
+                  BlueCount = locations[key].ctr;
+                  // BlueCount += 1;
+                }
               }
+              var pos = GPSEncoder.GPSToUCS((float)locations[key].lat, (float)locations[key].lon);
+              var gob = Instantiate(tempG, pos, Quaternion.Euler(ang));
+              GameObject ttxt = gob.transform.GetChild(0).gameObject;
+              TextMeshPro mText = ttxt.GetComponent<TextMeshPro>();
+              mText.text = color + " " + num;
+              string tempKey = locations[key].obj.ToString() + locations[key].ctr.ToString();
+              placed_markers[tempKey] = gob;
+
             }
-            var pos = GPSEncoder.GPSToUCS((float)locations[key].lat, (float)locations[key].lon);
-            var gob = Instantiate(tempG, pos, Quaternion.Euler(ang));
-            GameObject ttxt = gob.transform.GetChild(0).gameObject;
-            TextMeshPro mText = ttxt.GetComponent<TextMeshPro>();
-            mText.text = color + " " + num;
-            string tempKey = locations[key].obj.ToString() + locations[key].ctr.ToString();
-            placed_markers[tempKey] = gob;
 
           }
+
           fetchedLocations = true;
         }
       }
       Debug.Log($"{RedCount}----,{GreenCount}");
-      RedCount +=1;
-      BlueCount +=1;
-      GreenCount +=1;
+      RedCount += 1;
+      BlueCount += 1;
+      GreenCount += 1;
       yield return null;
     }
   }
@@ -342,7 +347,7 @@ public class VideoRend : MonoBehaviour
   //Update is called once per frame
   void Update()
   {
-		// Setting up UDP connection for receiving frames and metadata from drone.
+    // Setting up UDP connection for receiving frames and metadata from drone.
     if (client.Available > 0)
     {
       byte[] data = client.Receive(ref endPoint);
@@ -368,20 +373,20 @@ public class VideoRend : MonoBehaviour
         SetGrid();
         ScaleObjects(curscl);
       }
-			// Quaternion(w,x,y,z) of drone rotation.
+      // Quaternion(w,x,y,z) of drone rotation.
       w = (float)Convert.ToDouble(values["w"]);
       x = (float)Convert.ToDouble(values["x"]);
       y = (float)Convert.ToDouble(values["y"]);
       z = (float)Convert.ToDouble(values["z"]);
 
-			// converting drone postion in GPS to unity coordinates.
+      // converting drone postion in GPS to unity coordinates.
       var world_pos = GPSEncoder.GPSToUCS(lat, lon);
       world_pos.y = alt;
 
       pitch = (float)Convert.ToDouble(values["pitch"]);
       roll = (float)Convert.ToDouble(values["roll"]);
       yaw = (float)Convert.ToDouble(values["yaw"]);
-			// Setting up rawImage with the frame received from drone.(Simuating ground in unity by projecting this in clipping plane of main camera)
+      // Setting up rawImage with the frame received from drone.(Simuating ground in unity by projecting this in clipping plane of main camera)
       if (values["image"] != null)
       {
         byte[] result = Convert.FromBase64String(values["image"]);
@@ -389,7 +394,7 @@ public class VideoRend : MonoBehaviour
         texture.LoadImage(result);
         image.texture = texture;
       }
-			//Boolean check to set if the stream from drone is received.
+      //Boolean check to set if the stream from drone is received.
       if (Po)
       {
         GPSEncoder.SetLocalOrigin(new Vector2(lat, lon));
@@ -405,7 +410,7 @@ public class VideoRend : MonoBehaviour
         StartCoroutine(GetNextMove());
       }
 
-			// Checks to validate data before manipulating gameobjects in Unity.
+      // Checks to validate data before manipulating gameobjects in Unity.
       if (!float.IsNaN(pitch) && !float.IsNaN(roll) && !float.IsNaN(yaw))
       {
         ang.x = -1.0f * pitch;
@@ -420,7 +425,7 @@ public class VideoRend : MonoBehaviour
         {
           ang.x = ang.x * -1.0f;
         }
-				// Projecting ground at hypotenuse of Drone height from ground and pitch of drone to simulate real world movement.
+        // Projecting ground at hypotenuse of Drone height from ground and pitch of drone to simulate real world movement.
         float c = (90.0f - ang.x) * tempv;
         float tempang = (float)Math.Cos(c);
         float ht = alt / tempang;
@@ -430,9 +435,9 @@ public class VideoRend : MonoBehaviour
         }
         canv.planeDistance = ht + 1;
       }
-			//Converting Quaternion from NED to ENU.
+      //Converting Quaternion from NED to ENU.
       rotat = new Quaternion(-y, z, -x, w);
-			// Validating data
+      // Validating data
       if (!float.IsNaN(rotat.x) && !float.IsNaN(rotat.y) && !float.IsNaN(rotat.z) && !float.IsNaN(rotat.w))
       {
         drone.transform.rotation = rotat;
@@ -471,11 +476,11 @@ public class VideoRend : MonoBehaviour
       lpl.lat = Convert.ToDouble(values2["lat"]);
       lpl.lon = Convert.ToDouble(values2["lon"]);
 
-      
+
 
       Dictionary<string, double> pl = new Dictionary<string, double>();
       var tempVal = JsonConvert.SerializeObject(lpl);
-			// Creating a new entry for location in Firebase database.
+      // Creating a new entry for location in Firebase database.
       RestClient.Post<Location>("https://uavlab-98a0c-default-rtdb.firebaseio.com/location.json", tempVal).Then(response =>
       {
         Debug.Log(response);
@@ -491,12 +496,12 @@ public class VideoRend : MonoBehaviour
       pe.position = Input.mousePosition;
       List<RaycastResult> resList = new List<RaycastResult>();
       EventSystem.current.RaycastAll(pe, resList);
-      
+
 
       Vector3 mousePos = Input.mousePosition;
       if (resList.Count == 1)
       {
-       
+
         Dictionary<string, string> payload = new Dictionary<string, string>();
         var mouse_y = canv.GetComponent<RectTransform>().rect.height - mousePos.y;
         payload.Add("xpos", mousePos.x.ToString());
@@ -593,7 +598,7 @@ public class VideoRend : MonoBehaviour
 
 
   }
-	// Placing object based on user voice input.
+  // Placing object based on user voice input.
   void sendUserInput(float x, float y, string clr, string grd)
   {
     var dobj = Instantiate(dialogue);
@@ -638,7 +643,7 @@ public class VideoRend : MonoBehaviour
 
   }
 
-	// Record user voice inputs and place objects in respective grid.
+  // Record user voice inputs and place objects in respective grid.
   private void OnResult(Result result)
   {
     Debug.Log(result.text);
@@ -649,10 +654,10 @@ public class VideoRend : MonoBehaviour
 
   }
 
-	// Process user voice transcript to determine grid and color of object to be placed.
+  // Process user voice transcript to determine grid and color of object to be placed.
   private void Processtext(string[] keywords)
   {
-		// Resolution of screen 
+    // Resolution of screen 
     int width = (int)canv.GetComponent<RectTransform>().rect.width;
     int height = (int)canv.GetComponent<RectTransform>().rect.height;
     string[] colors = { "victim", "gun" };
@@ -674,14 +679,14 @@ public class VideoRend : MonoBehaviour
         };
 
     string[] selectedNumber = keywords.Intersect(numbers).ToArray();
-		// Condition to check if there are valid numbers in user voice input. (1 and 2 are valid inputs)
-		//(2 is valid because twenty three is combination of twenty and three)
+    // Condition to check if there are valid numbers in user voice input. (1 and 2 are valid inputs)
+    //(2 is valid because twenty three is combination of twenty and three)
     if (selectedNumber.Length < 1 || selectedNumber.Length > 2)
     {
       Debug.Log("Grid Number error");
       return;
     }
-		// Handling case of numbers greater than twenty.
+    // Handling case of numbers greater than twenty.
     if (selectedNumber.Contains("twenty"))
     {
       if (selectedNumber.Length == 1)
@@ -767,10 +772,12 @@ public class VideoRend : MonoBehaviour
     {
       Debug.Log(midpoints[finalGridNum - 1].Item1);
       Debug.Log(midpoints[finalGridNum - 1].Item2);
-      if(finalColor == "victim"){
+      if (finalColor == "victim")
+      {
         selectedButton = "green";
       }
-      if(finalColor == "gun"){
+      if (finalColor == "gun")
+      {
         selectedButton = "red";
       }
       sendUserInput(midpoints[finalGridNum - 1].Item1, midpoints[finalGridNum - 1].Item2, finalColor, finalGrid);
@@ -794,7 +801,7 @@ public class VideoRend : MonoBehaviour
     }
   }
 
-	// Calculating midpoints of each cell in NxN grid.
+  // Calculating midpoints of each cell in NxN grid.
   private Dictionary<int, Tuple<int, int>> CalculateMidpoints(int width, int height, int gridsize)
   {
     var midpoints = new Dictionary<int, Tuple<int, int>>();
@@ -817,7 +824,7 @@ public class VideoRend : MonoBehaviour
     return midpoints;
   }
 
-	// Creating markers.
+  // Creating markers.
   private void InstObj(Vector3 wp)
   {
     ang.x = 90;
@@ -870,7 +877,7 @@ public class VideoRend : MonoBehaviour
     blue.interactable = true;
   }
 
-	// Changing grid based on altitude(plane distance) of drone from ground.
+  // Changing grid based on altitude(plane distance) of drone from ground.
   private void SetGrid()
   {
     switch (curgrid)
