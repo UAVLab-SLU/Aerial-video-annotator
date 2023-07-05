@@ -97,6 +97,8 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
 
     curgrid = 1;
     SetGrid();
+    grid.gameObject.SetActive(false);
+    blue.gameObject.SetActive(false);
 
 
     selectedButton = "green";
@@ -133,7 +135,7 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
             "twenty one", "twenty two", "twenty three", "twenty four", "twenty five",
             "green", "blue", "red",
         };
-    startRecord();
+    // startRecord();
     StartCoroutine(GetOSLocation());
      
   }
@@ -229,7 +231,7 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
       {
         GPSEncoder.SetLocalOrigin(new Vector2(lat, lon));
         var world_p = GPSEncoder.GPSToUCS(lat, lon);
-        InstObj(world_p);
+        // InstObj(world_p);
         Debug.Log("Object placed");
         Po = false;
         Vector3 ostemp = new Vector3(0f,-100f,0f);
