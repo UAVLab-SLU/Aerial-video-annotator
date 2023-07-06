@@ -321,7 +321,7 @@ public class VideoRend : MonoBehaviour
                 }
               }
               var pos = GPSEncoder.GPSToUCS((float)locations[key].lat, (float)locations[key].lon);
-              var gob = Instantiate(tempG, pos, Quaternion.Euler(ang));
+              var gob = Instantiate(tempG, pos, Quaternion.Euler(0, 0, 0));
               GameObject ttxt = gob.transform.GetChild(0).gameObject;
               TextMeshPro mText = ttxt.GetComponent<TextMeshPro>();
               mText.text = color + " " + num;
@@ -452,6 +452,17 @@ public class VideoRend : MonoBehaviour
 
 
     }
+
+    foreach (var key in placed_markers.Keys)
+    {
+      Vector3 directionToCamera = placed_markers[key].transform.position - Camera.main.transform.position;
+      Quaternion lookRotation = Quaternion.LookRotation(directionToCamera, Vector3.up);
+      placed_markers[key].transform.rotation = lookRotation;
+    }
+
+    Vector3 tempCamDirec = OSPerson.transform.position - Camera.main.transform.position;
+    Quaternion tempRotn = Quaternion.LookRotation(tempCamDirec, Vector3.up);
+    OSPerson.transform.rotation = tempRotn;
 
     // Udp connection to get GeoLocation 
     if (client2.Available > 0)
