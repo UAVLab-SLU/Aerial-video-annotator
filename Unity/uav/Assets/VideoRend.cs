@@ -13,15 +13,7 @@ using Recognissimo.Components;
 using TMPro;
 using System.Collections;
 using UnityEngine.Networking;
-
-[Serializable]
-public class OSLocation 
-{
-    // Start is called before the first frame update
-   public double lat {get;set;}
-   public double lon {get;set;}
-  
-}
+using Proyecto26;
 
 public class VideoRend : MonoBehaviour//,IPointerEnterHandler
 {
@@ -307,6 +299,22 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
       Debug.Log(world_pos2);
       InstObj(world_pos2);
 
+      Location lpl = new Location();
+      lpl.ctr = int.Parse(values2["ctr"]);
+      lpl.obj = int.Parse(values2["obj"]);
+      lpl.lat = Convert.ToDouble(values2["lat"]);
+      lpl.lon = Convert.ToDouble(values2["lon"]);
+
+
+
+      Dictionary<string, double> pl = new Dictionary<string, double>();
+      var tempVal = JsonConvert.SerializeObject(lpl);
+      // Creating a new entry for location in Firebase database.
+      RestClient.Post<Location>("https://uavlab-98a0c-default-rtdb.firebaseio.com/location.json", tempVal).Then(response =>
+      {
+        Debug.Log(response);
+      });
+
     }
 
     //Placing object when user clicks on the screen
@@ -352,7 +360,7 @@ public class VideoRend : MonoBehaviour//,IPointerEnterHandler
         if(selectedButton == "blue"){
           payload.Add("obj","2");
         }
-
+        payload.Add("ctr","0");
         payload.Add("resh", canv.GetComponent<RectTransform>().rect.height.ToString());
         payload.Add("resw", canv.GetComponent<RectTransform>().rect.width.ToString());
 
