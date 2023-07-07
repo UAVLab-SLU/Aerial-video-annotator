@@ -115,7 +115,7 @@ public class VideoRend : MonoBehaviour
     RedCount = 0;
     SetGrid();
     OSnextMove = "";
-
+    grid.gameObject.SetActive(false);
     circleMarker = Instantiate(circle, new Vector3(0, -200, 0), Quaternion.identity);
 
     selectedButton = "green";
@@ -156,7 +156,7 @@ public class VideoRend : MonoBehaviour
             // "green", "blue", "red",
             "victim", "gun"
         };
-    startRecord();
+    // startRecord();
     StartCoroutine(GetOSLocation());
     // StartCoroutine(GetNextMove());
 
