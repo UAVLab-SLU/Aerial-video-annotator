@@ -22,6 +22,8 @@ public class VideoRend : MonoBehaviour
   public Canvas canv;
   public RawImage image;
 
+  public Canvas canvas2;
+
   public GameObject OSPerson;
   public GameObject drone;
   public GameObject obj1;
@@ -47,6 +49,8 @@ public class VideoRend : MonoBehaviour
   private int curgrid;
 
   private Dictionary<string, GameObject> placed_markers = new Dictionary<string, GameObject>();
+
+  private Dictionary<GameObject,string > tracker_boxes = new Dictionary<GameObject, string>();
 
   private int selectedGrid;
 
@@ -81,6 +85,10 @@ public class VideoRend : MonoBehaviour
   AudioClip clip;
   public SpeechRecognizer speechRecognizer;
 
+  public GameObject tracker;
+
+  public GameObject detect;
+
   private int GreenCount;
 
   private int BlueCount;
@@ -100,6 +108,11 @@ public class VideoRend : MonoBehaviour
 
   private GameObject circleMarker;
 
+
+  public List<GameObject> trackerList = new List<GameObject>();
+
+  public List<GameObject> trackingList = new List<GameObject>();
+
   void Start()
   {
     client = new UdpClient(8080);
@@ -118,8 +131,8 @@ public class VideoRend : MonoBehaviour
     grid.gameObject.SetActive(false);
     circleMarker = Instantiate(circle, new Vector3(0, -200, 0), Quaternion.identity);
 
-    selectedButton = "green";
-    green.interactable = false;
+    selectedButton = "";
+    // green.interactable = false;
     Po = true;
     fetchedLocations = false;
 
@@ -159,6 +172,7 @@ public class VideoRend : MonoBehaviour
     // startRecord();
     StartCoroutine(GetOSLocation());
     // StartCoroutine(GetNextMove());
+    
 
   }
 
@@ -344,18 +358,132 @@ public class VideoRend : MonoBehaviour
   }
 
 
+  public Rect ConvertBboxToUnityUI(
+        float x1, float y1, float x2, float y2, 
+        float W1, float H1, 
+        float W2, float H2  
+    )
+    {
+        float w = x2 - x1;
+        float h = y2 - y1;
+
+        float x1Norm = x1 / W1;
+        float y1Norm = y1 / H1;
+        float wNorm = w / W1;
+        float hNorm = h / H1;
+
+        float x1UI = x1Norm * W2;
+        float y1UI = y1Norm * H2;
+        float wUI = wNorm * W2;
+        float hUI = hNorm * H2;
+
+        float offset = w/2.0f;
+
+        return new Rect(W2-x1UI+offset, y1UI, wUI, hUI); 
+    }
+
+
+  private void GenerateDetectionBoxes(string bbox){
+
+
+    foreach (GameObject obj in trackerList)
+      {
+          Destroy(obj);
+      }
+      trackerList.Clear();
+
+    if(bbox != ""){
+      string[] boxes = bbox.Split('n');
+      foreach (string box in boxes)
+        {
+          string[] crds = box.Split('.');
+          // Debug.Log(box);
+          float y1 = (int)Convert.ToDouble(crds[0]);
+          float x1 = (int)Convert.ToDouble(crds[1]);
+          float y2 = (int)Convert.ToDouble(crds[2]);
+          float x2 = (int)Convert.ToDouble(crds[3]);
+          
+          var trkpos = (ConvertBboxToUnityUI(x1,y1,x2,y2,720f,1280f,1080f,1920f));
+          var trcpos = new Vector3(trkpos.y,trkpos.x);
+          // if(type == "detect"){
+          //   Debug.Log(type);
+          //   GameObject t = Instantiate(detect);
+          // t.transform.position = trcpos;
+          // t.transform.SetParent(canvas2.transform);
+          // trackerList.Add(t);
+          // tracker_boxes[t] = box;
+          // }
+
+          // if(type == "track"){
+          //   Debug.Log(type);
+          //   GameObject t = Instantiate(tracker);
+          // t.transform.position = trcpos;
+          // t.transform.SetParent(canvas2.transform);
+          // trackerList.Add(t);
+          // tracker_boxes[t] = box;
+          // }
+          GameObject t = Instantiate(detect);
+          t.transform.position = trcpos;
+          t.transform.SetParent(canvas2.transform);
+          trackerList.Add(t);
+          tracker_boxes[t] = box;
+          // Debug.Log($"{x1},{y1},{x2},{y2}");
+          
+        }
+    }
+  }
+
+  private void GenerateTrackerBoxes(string bbox){
+
+
+    foreach (GameObject obj in trackingList)
+      {
+          Destroy(obj);
+      }
+      trackingList.Clear();
+
+    if(bbox != ""){
+      string[] boxes = bbox.Split('n');
+      foreach (string box in boxes)
+        {
+          string[] crds = box.Split('.');
+          // Debug.Log(box);
+          float y1 = (int)Convert.ToDouble(crds[0]);
+          float x1 = (int)Convert.ToDouble(crds[1]);
+          float y2 = (int)Convert.ToDouble(crds[2]);
+          float x2 = (int)Convert.ToDouble(crds[3]);
+          
+          var trkpos = (ConvertBboxToUnityUI(x1,y1,x2,y2,720f,1280f,1080f,1920f));
+          var trcpos = new Vector3(trkpos.y,trkpos.x);
+      
+          GameObject t = Instantiate(tracker);
+          t.transform.position = trcpos;
+          t.transform.SetParent(canvas2.transform);
+          trackingList.Add(t);
+          // tracker_boxes[t] = box;
+          // Debug.Log($"{x1},{y1},{x2},{y2}");
+          
+        }
+    }
+  }
+
   //Update is called once per frame
   void Update()
   {
+
     // Setting up UDP connection for receiving frames and metadata from drone.
     if (client.Available > 0)
     {
       byte[] data = client.Receive(ref endPoint);
       string text = Encoding.UTF8.GetString(data);
       var values = JsonConvert.DeserializeObject<Dictionary<string, string>>(text);
+      // Debug.Log(values["bbox_data"]);
+      GenerateDetectionBoxes(values["bbox_data"]);
+      GenerateTrackerBoxes(values["tracker"]);
       lat = (float)Convert.ToDouble(values["lat"]);
       lon = (float)Convert.ToDouble(values["lon"]);
       alt = (float)Convert.ToDouble(values["alt"]);
+      Debug.Log(values["tracker"]);
 
       if (alt - checkalt > 10.0f)
       {
@@ -508,44 +636,60 @@ public class VideoRend : MonoBehaviour
       List<RaycastResult> resList = new List<RaycastResult>();
       EventSystem.current.RaycastAll(pe, resList);
 
-
-      Vector3 mousePos = Input.mousePosition;
-      if (resList.Count == 1)
+      foreach (RaycastResult obj in resList)
       {
+          if(tracker_boxes.ContainsKey(obj.gameObject)){
+            Debug.Log("ooooooooooooooooooo");
+            Debug.Log(tracker_boxes[obj.gameObject]);
+            Dictionary<string, string> payload = new Dictionary<string, string>();
+            payload.Add("track",tracker_boxes[obj.gameObject]);
+            string result = string.Join(",", payload.Select(x => '"' + x.Key + '"' + ": " + '"' + x.Value + '"'));
+            Debug.Log(result);
+            byte[] data = Encoding.UTF8.GetBytes(result);
+            client2.Send(data, data.Length, endPoint);
+          }
+      } 
+      Vector3 mousePos = Input.mousePosition;
+      if(selectedButton !=""){
 
-        Dictionary<string, string> payload = new Dictionary<string, string>();
-        var mouse_y = canv.GetComponent<RectTransform>().rect.height - mousePos.y;
-        payload.Add("xpos", mousePos.x.ToString());
-        payload.Add("ypos", mouse_y.ToString());
-        payload.Add("lat", lat.ToString());
-        payload.Add("alt", alt.ToString());
-        payload.Add("lon", lon.ToString());
 
-        if (selectedButton == "red")
+        if (resList.Count == 1)
         {
-          payload.Add("obj", "0");
-          payload.Add("ctr", RedCount.ToString());
-        }
-        if (selectedButton == "green")
-        {
-          payload.Add("obj", "1");
-          payload.Add("ctr", GreenCount.ToString());
-        }
-        if (selectedButton == "blue")
-        {
-          payload.Add("obj", "2");
-          payload.Add("ctr", BlueCount.ToString());
-        }
 
-        payload.Add("resh", canv.GetComponent<RectTransform>().rect.height.ToString());
-        payload.Add("resw", canv.GetComponent<RectTransform>().rect.width.ToString());
+          Dictionary<string, string> payload = new Dictionary<string, string>();
+          var mouse_y = canv.GetComponent<RectTransform>().rect.height - mousePos.y;
+          payload.Add("xpos", mousePos.x.ToString());
+          payload.Add("ypos", mouse_y.ToString());
+          payload.Add("lat", lat.ToString());
+          payload.Add("alt", alt.ToString());
+          payload.Add("lon", lon.ToString());
 
-        string result = string.Join(",", payload.Select(x => '"' + x.Key + '"' + ": " + '"' + x.Value + '"'));
-        Debug.Log(result);
-        byte[] data = Encoding.UTF8.GetBytes(result);
-        client.Send(data, data.Length, endPoint);
+          if (selectedButton == "red")
+          {
+            payload.Add("obj", "0");
+            payload.Add("ctr", RedCount.ToString());
+          }
+          if (selectedButton == "green")
+          {
+            payload.Add("obj", "1");
+            payload.Add("ctr", GreenCount.ToString());
+          }
+          if (selectedButton == "blue")
+          {
+            payload.Add("obj", "2");
+            payload.Add("ctr", BlueCount.ToString());
+          }
+
+          payload.Add("resh", canv.GetComponent<RectTransform>().rect.height.ToString());
+          payload.Add("resw", canv.GetComponent<RectTransform>().rect.width.ToString());
+          payload.Add("track","");
+          string result = string.Join(",", payload.Select(x => '"' + x.Key + '"' + ": " + '"' + x.Value + '"'));
+          Debug.Log(result);
+          byte[] data = Encoding.UTF8.GetBytes(result);
+          client.Send(data, data.Length, endPoint);
+          
+        }
       }
-
     }
 
   }
@@ -641,7 +785,7 @@ public class VideoRend : MonoBehaviour
       payload.Add("obj", "2");
       payload.Add("ctr", BlueCount.ToString());
     }
-
+      payload.Add("track","");
     string result = string.Join(",", payload.Select(x => '"' + x.Key + '"' + ": " + '"' + x.Value + '"'));
     byte[] data = Encoding.UTF8.GetBytes(result);
     client.Send(data, data.Length, endPoint);
@@ -873,7 +1017,8 @@ public class VideoRend : MonoBehaviour
     string tempKey = tempKey2 + ctr;
     placed_markers[tempKey] = gob;
 
-
+    resetButtons();
+    selectedButton = "";
     //GameObject c = Instantiate(circle,wp,Quaternion.Euler(ang));
     //placed_objects.Add(c);
     //Vector3 scaleChange = new Vector3(curscl, curscl, curscl);

@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 705507994}
-  m_IndirectSpecularColor: {r: 0.18028331, g: 0.2257133, b: 0.3069217, a: 1}
+  m_IndirectSpecularColor: {r: 0.18028378, g: 0.22571412, b: 0.30692285, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -1633,6 +1633,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   canv: {fileID: 1915456020}
   image: {fileID: 201361133}
+  canvas2: {fileID: 734852208}
   OSPerson: {fileID: 8552181484257990417, guid: 65dec68f6ee43cd46bc6714063840c98, type: 3}
   drone: {fileID: 284531815}
   obj1: {fileID: 1961528569870676102, guid: 8a797e83caf78c199bdc08ce3e135cfc, type: 3}
@@ -1650,8 +1651,11 @@ MonoBehaviour:
   blue: {fileID: 899146646}
   red: {fileID: 1854664841}
   speechRecognizer: {fileID: 0}
+  tracker: {fileID: 7848082554462023019, guid: e4b6b443ea0db8d5bbfaf9333e1f859a, type: 3}
+  detect: {fileID: 7848082554462023019, guid: 51a7c68b4ceaf9f42b6c22cd464e333e, type: 3}
   dialogue: {fileID: 631180363017829942, guid: c15e558f5db5a5c4c9a43124297a6c93, type: 3}
   nextMvNotif: {fileID: 631180363017829942, guid: 0ed2342d7afd6ee44b609c58f76549c8, type: 3}
+  trackerList: []
 --- !u!114 &1915456018
 MonoBehaviour:
   m_ObjectHideFlags: 0
