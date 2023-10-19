@@ -16,6 +16,7 @@ from pysot.core.config_adapn import cfg
 from pysot.models.model_builder_adapn import ModelBuilderADAPN
 from pysot.tracker.adsiamapn_tracker import ADSiamAPNTracker
 from pysot.utils.model_load import load_pretrain
+from collections import deque
 
 torch.set_num_threads(1)
 
@@ -34,9 +35,10 @@ import math
 from pyquaternion import Quaternion
 import requests
 # Create UDP socket to use for sending (and receiving)
-sock = U.UdpComms(udpIP="127.0.0.1", portTX=8080, portRX=8001, enableRX=True, suppressWarnings=True)
+sock = U.UdpComms(udpIP="127.0.0.1", portTX=8080, portRX=8081, enableRX=True, suppressWarnings=True)
 sock2 = U.UdpComms(udpIP="127.0.0.1", portTX=8000, portRX=8002, enableRX=True, suppressWarnings=True)
-cam = cv2.VideoCapture('Samples/tracking2.mp4')
+sock3 = U.UdpComms(udpIP="127.0.0.1", portTX=8005, portRX=8003, enableRX=True, suppressWarnings=True)
+cam = cv2.VideoCapture('Samples/tracking.mp4')
 i = 1
 lat = 50
 lon = 50
@@ -56,10 +58,15 @@ model = ModelBuilderADAPN()
 model = load_pretrain(model, 'general++.pth').eval().to(device)
 
 # build tracker
-tracker = ADSiamAPNTracker(model)
+
+trackers = []
+tracker_active = {}
+# tracker = ADSiamAPNTracker(model)
 
 detector = ObjectDetector()
 
+track_di = {}
+track_avg = {}
 
 import numpy as np
 def quaternion_to_euler(w, x, y, z):
@@ -106,7 +113,7 @@ def bbox_intersection(boxA, boxB):
     # Compute the IoU by taking the intersection area and dividing it
     # by the sum of the two areas minus the intersection area
     iou = intersection_area / float(boxA_area + boxB_area - intersection_area)
-    print(iou,'###########################################################')
+    # print(iou,'###########################################################')
     return iou
 
 def bbox_to_string(trk,float_list):
@@ -119,36 +126,91 @@ def bbox_to_string(trk,float_list):
             temp_li.append(st)
         return 'n'.join(temp_li)
     else:
-        traced_box = trk.split('.')
-        traced_box = [int(x) for x in traced_box]
-        # print(traced_box,'))))))')
+        traced_boxes = trk.split('n')
+
         temp_li = []
         for li in float_list:
             int_list = [int(x) for x in li]
-            if bbox_intersection(li,traced_box)>0.3:
-                print('overlapppppppppppp')
-                continue
-            st = '.'.join(map(str, int_list))
-            # st = st+'u'
-            temp_li.append(st)
+            check = True
+            for traced_b in traced_boxes:
+                traced_split = traced_b.split('.')
+                traced_box = [int(x) for x in traced_split]
+                
+                if bbox_intersection(li,traced_box)>0.3:
+                    # print('overlapppppppppppp')
+                    check = False
+            if check:
+                st = '.'.join(map(str, int_list))
+                temp_li.append(st)
         return 'n'.join(temp_li)
 
 # start_time = time.time()
 
-Tracker = False
+# Tracker = False
     
 
 def track(frame):
-    if Tracker == False:
+    if len(trackers) == 0:
         return ''
     else:
-        outputs = tracker.track(frame)
-        bbox = list(map(int, outputs['bbox']))
-        if bbox:
-            bbox[2]=bbox[0]+bbox[2]
-            bbox[3]=bbox[1]+bbox[3]
-        return '.'.join(map(str, bbox))
+        temp_li = []
+        for i in trackers:
 
+            outputs = i.track(frame)
+            
+
+            # print(outputs['best_score'])
+            track_di[i].append(outputs['best_score'])
+            # print(track_di[i],'....................')
+            bbox = list(map(int, outputs['bbox']))
+            if bbox:
+                bbox[2]=bbox[0]+bbox[2]
+                bbox[3]=bbox[1]+bbox[3]
+            st = '.'.join(map(str, bbox))
+            temp_li.append(st)
+            if len(track_di[i]) == 1:
+                di = {}
+                di["point"] = "start"
+                di["box"] = st
+                sock3.SendData(json.dumps(di).encode('utf-8'))
+                print(st,"Starting pointtttttttttttttttttttttt")
+            if len(track_di[i]) == 10:
+                track_di[i].popleft()
+                if sum(track_di[i])/10 <0.3:
+                    # print("Siamesee low confidence")
+                    trackers.remove(i)
+                    tracker_active[i]=False
+                    di = {}
+                    di["point"] = "last"
+                    di["box"] = st
+                    sock3.SendData(json.dumps(di).encode('utf-8'))
+                    print(st, "Last marked pointtttttttttttttttttttttt")
+        return 'n'.join(temp_li)
+
+
+def LocationCalculator(dat):
+    c = GC.CameraRayProjection(69,[float(dat["lat"]),float(dat["lon"]),float(dat["alt"])],
+                            [int(float(dat["resw"])),int(float(dat["resh"]))],
+                            GC.Coordinates(int(float(dat["xpos"])),int(float(dat["ypos"]))),
+
+                            [data['w'],data['x'],data['y'],data['z']])
+    
+    target_direction_ENU = c.target_ENU()
+    target_direction_ECEF = c.ENU_to_ECEF(target_direction_ENU)
+    intersect_ECEF = c.target_location(target_direction_ECEF)
+    
+    intersect_LLA = c.ECEFtoLLA(intersect_ECEF.x,intersect_ECEF.y,intersect_ECEF.z)
+    print(c.LLAtoXYZ(intersect_LLA[0], intersect_LLA[1], intersect_LLA[2]))
+    print("CALCULATED LOCATION IS",intersect_LLA)
+    
+    di2 = {
+        'lat' : str(intersect_LLA[0]),
+        'lon' : str(intersect_LLA[1]),
+        'alt' : str(intersect_LLA[2]),
+        'obj' : str(dat["obj"]),
+        'ctr' : str(dat["ctr"])
+    }
+    return json.dumps(di2).encode('utf-8')
 
 while True:
     ret,camImage = cam.read()
@@ -201,8 +263,10 @@ while True:
         #     Tracker = True
         data['tracker'] = track(camImage)
         data['bbox_data'] = bbox_to_string(data['tracker'],bbox_data)
-        print(data['tracker'],'------------')
-        print(data['bbox_data'],'+++++++++++++')
+        # print(data['tracker'],'------------')
+        data['tracker_status'] = '.'.join(['1' if value else '0' for value in tracker_active.values()])
+        # print(data['tracker_status'],'+++++++++++++')
+        # print('.'.join(['1' if value else '0' for value in tracker_active.values()]))
         # print(data['roll'],data['pitch'],data['yaw'])
         # print(di)
       
@@ -220,35 +284,41 @@ while True:
             dat = "{"+dat+"}"
             dat = json.loads(dat)
             if dat["track"] == "":
-                c = GC.CameraRayProjection(69,[float(dat["lat"]),float(dat["lon"]),float(dat["alt"])],
-                                        [int(float(dat["resw"])),int(float(dat["resh"]))],
-                                        GC.Coordinates(int(float(dat["xpos"])),int(float(dat["ypos"]))),
+                res = LocationCalculator(dat)
+                # c = GC.CameraRayProjection(69,[float(dat["lat"]),float(dat["lon"]),float(dat["alt"])],
+                #                         [int(float(dat["resw"])),int(float(dat["resh"]))],
+                #                         GC.Coordinates(int(float(dat["xpos"])),int(float(dat["ypos"]))),
 
-                                        [data['w'],data['x'],data['y'],data['z']])
+                #                         [data['w'],data['x'],data['y'],data['z']])
                 
-                target_direction_ENU = c.target_ENU()
-                target_direction_ECEF = c.ENU_to_ECEF(target_direction_ENU)
-                intersect_ECEF = c.target_location(target_direction_ECEF)
+                # target_direction_ENU = c.target_ENU()
+                # target_direction_ECEF = c.ENU_to_ECEF(target_direction_ENU)
+                # intersect_ECEF = c.target_location(target_direction_ECEF)
                 
-                intersect_LLA = c.ECEFtoLLA(intersect_ECEF.x,intersect_ECEF.y,intersect_ECEF.z)
-                print(c.LLAtoXYZ(intersect_LLA[0], intersect_LLA[1], intersect_LLA[2]))
-                print("CALCULATED LOCATION IS",intersect_LLA)
+                # intersect_LLA = c.ECEFtoLLA(intersect_ECEF.x,intersect_ECEF.y,intersect_ECEF.z)
+                # print(c.LLAtoXYZ(intersect_LLA[0], intersect_LLA[1], intersect_LLA[2]))
+                # print("CALCULATED LOCATION IS",intersect_LLA)
                 
-                di2 = {
-                    'lat' : str(intersect_LLA[0]),
-                    'lon' : str(intersect_LLA[1]),
-                    'alt' : str(intersect_LLA[2]),
-                    'obj' : str(dat["obj"]),
-                    'ctr' : str(dat["ctr"])
-                }
-                sock2.SendData(json.dumps(di2).encode('utf-8'))
+                # di2 = {
+                #     'lat' : str(intersect_LLA[0]),
+                #     'lon' : str(intersect_LLA[1]),
+                #     'alt' : str(intersect_LLA[2]),
+                #     'obj' : str(dat["obj"]),
+                #     'ctr' : str(dat["ctr"])
+                # }
+                sock2.SendData(res)
 
             else:
                 print("tracker initaliseddddddddddddddddddddd")
                 li = list(map(int,dat["track"].split('.')))
                 print(li)
-                tracker.init(frame, (li[0],li[1], li[2]-li[0], li[3]-li[1]))
-                Tracker = True
+                temp_tracker = ADSiamAPNTracker(model)
+                trackers.append(temp_tracker)
+                tracker_active[temp_tracker] = True
+                track_di[temp_tracker] = deque(maxlen = 10)
+                trackers[-1].init(frame, (li[0],li[1], li[2]-li[0], li[3]-li[1]))
+                # tracker.init(frame, (li[0],li[1], li[2]-li[0], li[3]-li[1]))
+                # Tracker = True
 
             # db_di ={
             #      'lat' : float(str(intersect_LLA[0])),
@@ -261,8 +331,12 @@ while True:
     dat2 = sock2.ReadReceivedData() # read data
     #implement timer function
     if dat2 != None: 
-            print(type(dat)) 
-            print(dat)
+            print(type(dat2),"oooooooooooooooooooooooooo") 
+            print(dat2)
+            dat2 = "{"+dat2+"}"
+            dat2 = json.loads(dat2)
+            res = LocationCalculator(dat2)
+            sock2.SendData(res)
             
 
     time.sleep(0.1)

@@ -1639,6 +1639,10 @@ MonoBehaviour:
   obj1: {fileID: 1961528569870676102, guid: 8a797e83caf78c199bdc08ce3e135cfc, type: 3}
   obj2: {fileID: 1961528569870676102, guid: bf08cf102a524764eb50e5dec9cc4c87, type: 3}
   obj3: {fileID: 1961528569870676102, guid: 5d3f0a60975f0f64da74124904200e9d, type: 3}
+  pathMrkr: {fileID: 4169372415761698288, guid: 0ebb52bcf3dc94716acf3fd3087cb453, type: 3}
+  pathStart: {fileID: 4169372415761698288, guid: 64c685e68c5af85208d561786d5d72d8, type: 3}
+  pathEnd: {fileID: 4169372415761698288, guid: 8d0777d2ecbb5e3f082198a39444b52f, type: 3}
+  arrow: {fileID: 7848082554462023019, guid: 62a07a8d0ee11230aa57cf06e688ccd4, type: 3}
   circle: {fileID: 251463988739871473, guid: f0e6a80386d68c040bf336287c7f3bed, type: 3}
   grid: {fileID: 611802374}
   grid2: {fileID: 2800000, guid: 1920ba0a4dc13364abab11bbf376ab03, type: 3}
@@ -1656,6 +1660,7 @@ MonoBehaviour:
   dialogue: {fileID: 631180363017829942, guid: c15e558f5db5a5c4c9a43124297a6c93, type: 3}
   nextMvNotif: {fileID: 631180363017829942, guid: 0ed2342d7afd6ee44b609c58f76549c8, type: 3}
   trackerList: []
+  trackingList: []
 --- !u!114 &1915456018
 MonoBehaviour:
   m_ObjectHideFlags: 0

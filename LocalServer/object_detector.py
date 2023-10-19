@@ -13,5 +13,5 @@ class ObjectDetector:
         self.model.overrides['max_det'] = max_det
 
     def predict(self, image):
-        results = self.model.predict(image)
+        results = self.model.predict(image,verbose=False)
         return results

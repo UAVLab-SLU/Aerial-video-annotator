@@ -29,6 +29,10 @@ public class VideoRend : MonoBehaviour
   public GameObject obj1;
   public GameObject obj2;
   public GameObject obj3;
+  public GameObject pathMrkr;
+  public GameObject pathStart;
+  public GameObject pathEnd;
+  public GameObject arrow;
   private GameObject tp;
   private List<GameObject> placed_objects = new List<GameObject>();
   public GameObject circle;
@@ -42,7 +46,9 @@ public class VideoRend : MonoBehaviour
   private float curscl = 1.0f;
   UdpClient client;
   UdpClient client2;
+  UdpClient client3;
   IPEndPoint endPoint;
+  IPEndPoint endPoint2;
   public GPSEncoder GE;
   private int count;
 
@@ -51,6 +57,13 @@ public class VideoRend : MonoBehaviour
   private Dictionary<string, GameObject> placed_markers = new Dictionary<string, GameObject>();
 
   private Dictionary<GameObject,string > tracker_boxes = new Dictionary<GameObject, string>();
+
+  private Dictionary<string, bool> tracker_stat = new Dictionary<string, bool>();
+
+  private Dictionary<GameObject, GameObject> objectToArrowMap = new Dictionary<GameObject, GameObject>();
+
+  private Dictionary<GameObject, bool> animationRunningMap = new Dictionary<GameObject, bool>();
+
 
   private int selectedGrid;
 
@@ -113,11 +126,21 @@ public class VideoRend : MonoBehaviour
 
   public List<GameObject> trackingList = new List<GameObject>();
 
+  private float pathMrkTrgr = 0f;
+
+  private float pathMrkIntr = 0.1f; 
+
+  public float animationDuration = 0.5f; 
+
+  public float waitDuration = 0.2f; 
+
   void Start()
   {
     client = new UdpClient(8080);
     client2 = new UdpClient(8000);
-    endPoint = new IPEndPoint(IPAddress.Any, 0);
+    client3 = new UdpClient(8005);
+    endPoint = new IPEndPoint(IPAddress.Any, 8001);
+    endPoint2 = new IPEndPoint(IPAddress.Any, 8002);
     green.onClick.AddListener(GreenButton);
     blue.onClick.AddListener(BlueButton);
     red.onClick.AddListener(RedButton);
@@ -199,9 +222,9 @@ public class VideoRend : MonoBehaviour
 
               foreach (var key in placed_markers.Keys)
               {
-                Debug.Log($"----------{key}");
+                // Debug.Log($"----------{key}");
               }
-              Debug.Log($"{webRequest.downloadHandler.text}------");
+              // Debug.Log($"{webRequest.downloadHandler.text}------");
               var values = JsonConvert.DeserializeObject<Dictionary<string, int>>(webRequest.downloadHandler.text);
               var tempNextMove = values["color"].ToString() + values["num"].ToString();
               if (placed_markers.ContainsKey(tempNextMove))
@@ -335,6 +358,8 @@ public class VideoRend : MonoBehaviour
                 }
               }
               var pos = GPSEncoder.GPSToUCS((float)locations[key].lat, (float)locations[key].lon);
+              if( locations[key].obj == 0 || locations[key].obj == 1){
+              
               var gob = Instantiate(tempG, pos, Quaternion.Euler(0, 0, 0));
               GameObject ttxt = gob.transform.GetChild(0).gameObject;
               TextMeshPro mText = ttxt.GetComponent<TextMeshPro>();
@@ -342,6 +367,20 @@ public class VideoRend : MonoBehaviour
               string tempKey = locations[key].obj.ToString() + locations[key].ctr.ToString();
               placed_markers[tempKey] = gob;
 
+              }
+              if(locations[key].obj == 5){
+                pos.y = 0f;
+                Instantiate(pathMrkr,pos,Quaternion.Euler(new Vector3(90,0,0)));
+              }
+              else if(locations[key].obj == 6){
+                pos.y = 0f;
+                Instantiate(pathStart,pos,Quaternion.Euler(new Vector3(90,0,0)));
+              }
+              else if(locations[key].obj == 7){
+                pos.y = 0f;
+                Instantiate(pathEnd,pos,Quaternion.Euler(new Vector3(90,0,0)));
+              }
+              
             }
 
           }
@@ -358,12 +397,12 @@ public class VideoRend : MonoBehaviour
   }
 
 
-  public Rect ConvertBboxToUnityUI(
-        float x1, float y1, float x2, float y2, 
-        float W1, float H1, 
-        float W2, float H2  
-    )
-    {
+  public Rect ConvertBboxToUnityUI(string[] crds, float W1, float H1, float W2, float H2)
+    {   
+      float y1 = (int)Convert.ToDouble(crds[0]);
+      float x1 = (int)Convert.ToDouble(crds[1]);
+      float y2 = (int)Convert.ToDouble(crds[2]);
+      float x2 = (int)Convert.ToDouble(crds[3]);
         float w = x2 - x1;
         float h = y2 - y1;
 
@@ -379,7 +418,7 @@ public class VideoRend : MonoBehaviour
 
         float offset = w/2.0f;
 
-        return new Rect(W2-x1UI+offset, y1UI, wUI, hUI); 
+        return new Rect(W2-x1UI, y1UI+offset, wUI, hUI); 
     }
 
 
@@ -397,31 +436,9 @@ public class VideoRend : MonoBehaviour
       foreach (string box in boxes)
         {
           string[] crds = box.Split('.');
-          // Debug.Log(box);
-          float y1 = (int)Convert.ToDouble(crds[0]);
-          float x1 = (int)Convert.ToDouble(crds[1]);
-          float y2 = (int)Convert.ToDouble(crds[2]);
-          float x2 = (int)Convert.ToDouble(crds[3]);
           
-          var trkpos = (ConvertBboxToUnityUI(x1,y1,x2,y2,720f,1280f,1080f,1920f));
+          var trkpos = (ConvertBboxToUnityUI(crds,720f,1280f,1080f,1920f));
           var trcpos = new Vector3(trkpos.y,trkpos.x);
-          // if(type == "detect"){
-          //   Debug.Log(type);
-          //   GameObject t = Instantiate(detect);
-          // t.transform.position = trcpos;
-          // t.transform.SetParent(canvas2.transform);
-          // trackerList.Add(t);
-          // tracker_boxes[t] = box;
-          // }
-
-          // if(type == "track"){
-          //   Debug.Log(type);
-          //   GameObject t = Instantiate(tracker);
-          // t.transform.position = trcpos;
-          // t.transform.SetParent(canvas2.transform);
-          // trackerList.Add(t);
-          // tracker_boxes[t] = box;
-          // }
           GameObject t = Instantiate(detect);
           t.transform.position = trcpos;
           t.transform.SetParent(canvas2.transform);
@@ -447,15 +464,11 @@ public class VideoRend : MonoBehaviour
       foreach (string box in boxes)
         {
           string[] crds = box.Split('.');
-          // Debug.Log(box);
-          float y1 = (int)Convert.ToDouble(crds[0]);
-          float x1 = (int)Convert.ToDouble(crds[1]);
-          float y2 = (int)Convert.ToDouble(crds[2]);
-          float x2 = (int)Convert.ToDouble(crds[3]);
           
-          var trkpos = (ConvertBboxToUnityUI(x1,y1,x2,y2,720f,1280f,1080f,1920f));
+          var trkpos = (ConvertBboxToUnityUI(crds,720f,1280f,1080f,1920f));
+          // Debug.Log(trkpos.width);
           var trcpos = new Vector3(trkpos.y,trkpos.x);
-      
+          // Debug.Log($"Tracker box at{trcpos}");
           GameObject t = Instantiate(tracker);
           t.transform.position = trcpos;
           t.transform.SetParent(canvas2.transform);
@@ -467,6 +480,97 @@ public class VideoRend : MonoBehaviour
     }
   }
 
+  private void StartingAndLastPoint(string keyToCheck){
+    if (tracker_stat.ContainsKey(keyToCheck))
+        {
+            Debug.Log("Last point createddd");
+        }
+        else
+        {   
+          tracker_stat[keyToCheck] = true;
+            Debug.Log("Starting point createddddddd");
+        }
+  }
+
+  private void SendData(string res){
+    string tr = "ooooooooooooooooooooo";
+      byte[] bdata = Encoding.UTF8.GetBytes(tr);
+      client.Send(bdata, bdata.Length, endPoint2);
+    Debug.Log($"{res} iiiiiiiiiiiiiiiiiiiii");
+    byte[] data = Encoding.UTF8.GetBytes(res);
+    client.Send(data, data.Length, endPoint2);
+  }
+
+  private void PathMarker(string activity,string tracker){
+    var ctr = 0;
+    string[] boxes = tracker.Split('n');
+    if(activity != "" ){
+      string[] trkr_act = activity.Split('.');
+      foreach (string act in trkr_act){
+        if (act == "1"){
+          if(tracker != ""){
+            var tmp = boxes[ctr];
+            Debug.Log($"{tmp} tracker boxessssssssssssssssssssssssssssss");
+            string[] crds = boxes[ctr].Split('.');
+            var trkpos = (ConvertBboxToUnityUI(crds,720f,1280f,1080f,1920f));
+            var pathXpos = trkpos.y + trkpos.width/2.0f;
+            var pathYpos = canv.GetComponent<RectTransform>().rect.height - trkpos.x + trkpos.height/2.0f;
+            // selectedButton = "green";
+            Debug.Log($"{pathXpos},{pathYpos} are midPoints");
+            string result = PayloadPrep(pathXpos.ToString(),pathYpos.ToString(),lat.ToString(),lon.ToString(),alt.ToString(),"5","0","");
+            // string result = string.Join(",", payload.Select(x => '"' + x.Key + '"' + ": " + '"' + x.Value + '"'));
+            Debug.Log(result);
+            SendData(result);
+            ctr +=1;
+            }
+          // Debug.Log("Tracker active");
+        }
+        if (act == "0"){
+          
+          Debug.Log("Tracker inactivee");
+        }
+      }
+    }
+    Debug.Log("Path marking triggered");
+  }
+
+  IEnumerator AnimateArrow(Transform arrowTransform, float moveDuration, float waitTime)
+    {
+        Vector3 forwardDirection = arrowTransform.up; 
+        Vector3 startPos = arrowTransform.localPosition;
+        Vector3 forwardPos = startPos + (forwardDirection * 10); 
+        Vector3 backwardPos = startPos - (forwardDirection * 10); 
+
+        while (true) 
+        {
+            
+            float elapsedTime = 0;
+            while (elapsedTime < moveDuration)
+            {
+                arrowTransform.localPosition = Vector3.Lerp(startPos, forwardPos, elapsedTime / moveDuration);
+                elapsedTime += Time.deltaTime;
+                yield return null;
+            }
+
+            arrowTransform.localPosition = forwardPos;
+
+            yield return new WaitForSeconds(waitTime);
+
+            
+            elapsedTime = 0;
+            while (elapsedTime < moveDuration)
+            {
+                arrowTransform.localPosition = Vector3.Lerp(forwardPos, backwardPos, elapsedTime / moveDuration);
+                elapsedTime += Time.deltaTime;
+                yield return null;
+            }
+
+            arrowTransform.localPosition = backwardPos;
+
+            yield return new WaitForSeconds(waitTime);
+        }
+    }
+
   //Update is called once per frame
   void Update()
   {
@@ -477,13 +581,11 @@ public class VideoRend : MonoBehaviour
       byte[] data = client.Receive(ref endPoint);
       string text = Encoding.UTF8.GetString(data);
       var values = JsonConvert.DeserializeObject<Dictionary<string, string>>(text);
-      // Debug.Log(values["bbox_data"]);
-      GenerateDetectionBoxes(values["bbox_data"]);
-      GenerateTrackerBoxes(values["tracker"]);
+      
       lat = (float)Convert.ToDouble(values["lat"]);
       lon = (float)Convert.ToDouble(values["lon"]);
       alt = (float)Convert.ToDouble(values["alt"]);
-      Debug.Log(values["tracker"]);
+
 
       if (alt - checkalt > 10.0f)
       {
@@ -577,7 +679,19 @@ public class VideoRend : MonoBehaviour
         drone.transform.position = world_pos;
       }
 
+      GenerateDetectionBoxes(values["bbox_data"]);
+      GenerateTrackerBoxes(values["tracker"]);
+      pathMrkTrgr += Time.deltaTime;
+      Debug.Log("ooooooooooooooooooooooooooooooooooooooo");
+        // Check if it's time to call the function.
+        if (pathMrkTrgr >= pathMrkIntr)
+        {
+            PathMarker(values["tracker_status"],values["tracker"]);
 
+            // Reset the time elapsed.
+            pathMrkTrgr = 0f;
+        }
+     
 
     }
 
@@ -586,6 +700,67 @@ public class VideoRend : MonoBehaviour
       Vector3 directionToCamera = placed_markers[key].transform.position - Camera.main.transform.position;
       Quaternion lookRotation = Quaternion.LookRotation(directionToCamera, Vector3.up);
       placed_markers[key].transform.rotation = lookRotation;
+    }
+
+    foreach (var key in placed_markers.Keys)
+    {
+      Vector3 screenPos = Camera.main.WorldToScreenPoint(placed_markers[key].transform.position);
+      // Debug.Log(screenPos);
+      // Debug.Log(placed_markers[key].transform.GetChild(0).gameObject.GetComponent<TextMeshPro>().text);
+      GameObject arrowObject;
+
+      if (!objectToArrowMap.ContainsKey(placed_markers[key]))
+      {
+          arrowObject = Instantiate(arrow);
+          // GameObject ttxt = arrowObject.transform.GetChild(0).gameObject;
+          TextMeshProUGUI mText = arrowObject.GetComponentInChildren<TextMeshProUGUI>();;
+          mText.text = placed_markers[key].transform.GetChild(0).gameObject.GetComponent<TextMeshPro>().text;
+          // arrowObject.transform.GetChild(0).gameObject.GetComponent<TextMeshPro>().text = placed_markers[key].transform.GetChild(0).gameObject.GetComponent<TextMeshPro>().text;
+          arrowObject.transform.SetParent(canvas2.transform);
+          objectToArrowMap[placed_markers[key]] = arrowObject;
+      }
+      else
+      {
+          arrowObject = objectToArrowMap[placed_markers[key]];
+      }
+
+      if (screenPos.x < 0 || screenPos.x > Screen.width || screenPos.y < 0 || screenPos.y > Screen.height)
+      {
+          arrowObject.SetActive(true);
+          
+          Vector2 canvasSize = canvas2.GetComponent<RectTransform>().sizeDelta;
+          Vector2 canvasPosition = new Vector2(screenPos.x / Screen.width * canvasSize.x, screenPos.y / Screen.height * canvasSize.y) - canvasSize * 0.5f;
+
+          Vector3 screenCenter = new Vector3(Screen.width * 0.5f, Screen.height * 0.5f, screenPos.z);
+          Vector3 direction = screenPos - screenCenter;
+          direction.Normalize();
+
+          float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
+          arrowObject.transform.rotation = Quaternion.Euler(0, 0, angle - 90);
+
+          float clampBorder = 100.0f; // Adjust this value to set how far inside the screen's edge the marker appears
+          canvasPosition = new Vector2(
+              Mathf.Clamp(canvasPosition.x, -canvasSize.x * 0.5f + clampBorder, canvasSize.x * 0.5f - clampBorder),
+              Mathf.Clamp(canvasPosition.y, -canvasSize.y * 0.5f + clampBorder, canvasSize.y * 0.5f - clampBorder)
+          );
+
+          arrowObject.transform.localPosition = canvasPosition;
+          if (!animationRunningMap.ContainsKey(arrowObject) || !animationRunningMap[arrowObject])
+            {
+                StartCoroutine(AnimateArrow(arrowObject.transform, animationDuration, waitDuration));
+                animationRunningMap[arrowObject] = true;
+            }
+      }
+      else
+      {
+          arrowObject.SetActive(false);
+          if (animationRunningMap.ContainsKey(arrowObject) && animationRunningMap[arrowObject])
+            {
+                StopCoroutine(AnimateArrow(arrowObject.transform, animationDuration, waitDuration));
+                animationRunningMap[arrowObject] = false;
+            }
+          Debug.Log("Visibleee");
+      }
     }
 
     Vector3 tempCamDirec = OSPerson.transform.position - Camera.main.transform.position;
@@ -606,10 +781,10 @@ public class VideoRend : MonoBehaviour
       world_pos2.x = 1.0f * world_pos2.x;
       world_pos2.z = 1.0f * world_pos2.z;
       Debug.Log(world_pos2);
-      InstObj(world_pos2);
+      InstObj(world_pos2,values2["obj"]);
 
-
-      Location lpl = new Location();
+      // if (values2["obj"] == "0" || values2["obj"] == "1" || values2["obj"] == "2"){
+        Location lpl = new Location();
       lpl.ctr = int.Parse(values2["ctr"]);
       lpl.obj = int.Parse(values2["obj"]);
       lpl.lat = Convert.ToDouble(values2["lat"]);
@@ -624,8 +799,34 @@ public class VideoRend : MonoBehaviour
       {
         Debug.Log(response);
       });
+      // }
+      
 
     }
+
+    if (client3.Available >0){
+      byte[] data = client3.Receive(ref endPoint);
+      string text = Encoding.UTF8.GetString(data);
+      var values3 = JsonConvert.DeserializeObject<Dictionary<string, string>>(text);
+      // Debug.Log(values3["point"]);
+      var obj = "";
+      if (values3["point"]=="start"){
+        obj = "6";
+      }
+      else if (values3["point"]=="last"){
+        obj = "7";
+      }
+      string[] crds = values3["box"].Split('.');
+      var trkpos = (ConvertBboxToUnityUI(crds,720f,1280f,1080f,1920f));
+      var pathXpos = trkpos.y + trkpos.width/2.0f;
+      var pathYpos = canv.GetComponent<RectTransform>().rect.height - trkpos.x + trkpos.height/2.0f;
+      Debug.Log($"{pathXpos},{pathYpos} are midPointsssssssssssssssssssssssssssssssssssss");
+      string result = PayloadPrep(pathXpos.ToString(),pathYpos.ToString(),lat.ToString(),lon.ToString(),alt.ToString(),obj,"0","");
+      // Debug.Log(result);
+      SendData(result);
+      
+    }
+    
 
     //Placing object when user clicks on the screen
     if (Input.GetMouseButtonDown(0))
@@ -639,8 +840,7 @@ public class VideoRend : MonoBehaviour
       foreach (RaycastResult obj in resList)
       {
           if(tracker_boxes.ContainsKey(obj.gameObject)){
-            Debug.Log("ooooooooooooooooooo");
-            Debug.Log(tracker_boxes[obj.gameObject]);
+            // Debug.Log(tracker_boxes[obj.gameObject]);
             Dictionary<string, string> payload = new Dictionary<string, string>();
             payload.Add("track",tracker_boxes[obj.gameObject]);
             string result = string.Join(",", payload.Select(x => '"' + x.Key + '"' + ": " + '"' + x.Value + '"'));
@@ -656,34 +856,27 @@ public class VideoRend : MonoBehaviour
         if (resList.Count == 1)
         {
 
-          Dictionary<string, string> payload = new Dictionary<string, string>();
           var mouse_y = canv.GetComponent<RectTransform>().rect.height - mousePos.y;
-          payload.Add("xpos", mousePos.x.ToString());
-          payload.Add("ypos", mouse_y.ToString());
-          payload.Add("lat", lat.ToString());
-          payload.Add("alt", alt.ToString());
-          payload.Add("lon", lon.ToString());
-
+          var obj = "";
+          var ctr = "";
           if (selectedButton == "red")
-          {
-            payload.Add("obj", "0");
-            payload.Add("ctr", RedCount.ToString());
+          { 
+            obj = "0";
+            ctr = RedCount.ToString();
           }
           if (selectedButton == "green")
           {
-            payload.Add("obj", "1");
-            payload.Add("ctr", GreenCount.ToString());
+            obj = "1";
+            ctr = GreenCount.ToString();
           }
           if (selectedButton == "blue")
           {
-            payload.Add("obj", "2");
-            payload.Add("ctr", BlueCount.ToString());
+            obj = "2";
+            ctr = BlueCount.ToString();
           }
 
-          payload.Add("resh", canv.GetComponent<RectTransform>().rect.height.ToString());
-          payload.Add("resw", canv.GetComponent<RectTransform>().rect.width.ToString());
-          payload.Add("track","");
-          string result = string.Join(",", payload.Select(x => '"' + x.Key + '"' + ": " + '"' + x.Value + '"'));
+          string result = PayloadPrep(mousePos.x.ToString(),mouse_y.ToString(),lat.ToString(),lon.ToString(),alt.ToString(),obj,ctr,"");
+         
           Debug.Log(result);
           byte[] data = Encoding.UTF8.GetBytes(result);
           client.Send(data, data.Length, endPoint);
@@ -692,6 +885,23 @@ public class VideoRend : MonoBehaviour
       }
     }
 
+  }
+
+
+  private string PayloadPrep(string xpos, string ypos, string lat, string lon, string alt, string obj, string ctr, string track){
+    Dictionary<string, string> payload = new Dictionary<string, string>();
+    payload.Add("xpos", xpos);
+    payload.Add("ypos", ypos);
+    payload.Add("lat", lat);
+    payload.Add("alt", alt);
+    payload.Add("lon", lon);
+    payload.Add("resh", canv.GetComponent<RectTransform>().rect.height.ToString());
+    payload.Add("resw", canv.GetComponent<RectTransform>().rect.width.ToString());
+    payload.Add("track",track);
+    payload.Add("obj", obj);
+    payload.Add("ctr", ctr);
+    string result = string.Join(",", payload.Select(x => '"' + x.Key + '"' + ": " + '"' + x.Value + '"'));
+    return result;
   }
 
 
@@ -760,33 +970,25 @@ public class VideoRend : MonoBehaviour
     dg = dobj.GetComponentInChildren<TextMeshProUGUI>();
     dg.text = clr + " marker is placed in grid " + grd;
     Destroy(dobj, 3);
-    Dictionary<string, string> payload = new Dictionary<string, string>();
-    payload.Add("xpos", x.ToString());
-    payload.Add("ypos", y.ToString());
-    payload.Add("lat", lat.ToString());
-    payload.Add("alt", alt.ToString());
-    payload.Add("lon", lon.ToString());
-
-    payload.Add("resh", canv.GetComponent<RectTransform>().rect.height.ToString());
-    payload.Add("resw", canv.GetComponent<RectTransform>().rect.width.ToString());
-
+    var obj = "";
+    var ctr = "";
     if (selectedButton == "red")
-    {
-      payload.Add("obj", "0");
-      payload.Add("ctr", RedCount.ToString());
+    { 
+      obj = "0";
+      ctr = RedCount.ToString();
     }
     if (selectedButton == "green")
     {
-      payload.Add("obj", "1");
-      payload.Add("ctr", GreenCount.ToString());
+      obj = "1";
+      ctr = GreenCount.ToString();
     }
     if (selectedButton == "blue")
     {
-      payload.Add("obj", "2");
-      payload.Add("ctr", BlueCount.ToString());
+      obj = "2";
+      ctr = BlueCount.ToString();
     }
-      payload.Add("track","");
-    string result = string.Join(",", payload.Select(x => '"' + x.Key + '"' + ": " + '"' + x.Value + '"'));
+    string result = PayloadPrep(x.ToString(),y.ToString(),lat.ToString(),lon.ToString(),alt.ToString(),obj,ctr,"");
+    // string result = string.Join(",", payload.Select(x => '"' + x.Key + '"' + ": " + '"' + x.Value + '"'));
     byte[] data = Encoding.UTF8.GetBytes(result);
     client.Send(data, data.Length, endPoint);
   }
@@ -980,13 +1182,13 @@ public class VideoRend : MonoBehaviour
   }
 
   // Creating markers.
-  private void InstObj(Vector3 wp)
+  private void InstObj(Vector3 wp,string oj)
   {
     ang.x = 90;
     string mclr = "";
     var ctr = "";
     string tempKey2 = "";
-    if (selectedButton == "green")
+    if (oj == "1")
     {
       tp = obj1;
       mclr = "Victim";
@@ -994,7 +1196,7 @@ public class VideoRend : MonoBehaviour
       GreenCount += 1;
       tempKey2 = "1";
     }
-    else if (selectedButton == "red")
+    else if (oj == "0")
     {
       tp = obj2;
       mclr = "Gun";
@@ -1002,7 +1204,7 @@ public class VideoRend : MonoBehaviour
       RedCount += 1;
       tempKey2 = "0";
     }
-    else if (selectedButton == "blue")
+    else if (oj == "2")
     {
       tp = obj3;
       mclr = "Blue";
@@ -1010,12 +1212,29 @@ public class VideoRend : MonoBehaviour
       BlueCount += 1;
       tempKey2 = "2";
     }
-    var gob = Instantiate(tp, wp, Quaternion.Euler(ang));
-    GameObject ttxt = gob.transform.GetChild(0).gameObject;
-    TextMeshPro mText = ttxt.GetComponent<TextMeshPro>();
-    mText.text = mclr + " " + ctr;
-    string tempKey = tempKey2 + ctr;
-    placed_markers[tempKey] = gob;
+    if(oj == "1" || oj == "0"){
+      var gob = Instantiate(tp, wp, Quaternion.Euler(ang));
+      GameObject ttxt = gob.transform.GetChild(0).gameObject;
+      TextMeshPro mText = ttxt.GetComponent<TextMeshPro>();
+      mText.text = mclr + " " + ctr;
+      string tempKey = tempKey2 + ctr;
+      placed_markers[tempKey] = gob;
+    }
+    else if(oj == "5"){
+      wp.y = 0f;
+      Instantiate(pathMrkr,wp,Quaternion.Euler(new Vector3(90,0,0)));
+    }
+
+    else if(oj == "6"){
+      wp.y = 0f;
+      Instantiate(pathStart,wp,Quaternion.Euler(new Vector3(90,0,0)));
+    }
+
+    else if(oj == "7"){
+      wp.y = 0f;
+      Instantiate(pathEnd,wp,Quaternion.Euler(new Vector3(90,0,0)));
+    }
+    
 
     resetButtons();
     selectedButton = "";
