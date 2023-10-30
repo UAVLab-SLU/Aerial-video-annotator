@@ -49,29 +49,25 @@ public class VideoRend : MonoBehaviour
   UdpClient client3;
   IPEndPoint endPoint;
   IPEndPoint endPoint2;
-  public GPSEncoder GE;
-  private int count;
 
-  private int curgrid;
+  private IndependentFun IndF;
+  private TextProcessor textProcessor;
+  public int curgrid;
 
   private Dictionary<string, GameObject> placed_markers = new Dictionary<string, GameObject>();
 
-  private Dictionary<GameObject,string > tracker_boxes = new Dictionary<GameObject, string>();
+  private Dictionary<GameObject, string> tracker_boxes = new Dictionary<GameObject, string>();
 
-  private Dictionary<string, bool> tracker_stat = new Dictionary<string, bool>();
 
   private Dictionary<GameObject, GameObject> objectToArrowMap = new Dictionary<GameObject, GameObject>();
 
   private Dictionary<GameObject, bool> animationRunningMap = new Dictionary<GameObject, bool>();
 
 
-  private int selectedGrid;
 
   Dictionary<string, Location> locations;
 
   TextMeshProUGUI dg;
-
-  public TextMeshProUGUI dist;
 
   public TextMeshProUGUI nextMv;
   float lat = 0.0f;
@@ -90,12 +86,11 @@ public class VideoRend : MonoBehaviour
 
   private Vector3 ang;
   private Quaternion rotat;
-  string selectedButton;
+  public string selectedButton;
 
   public Button green;
   public Button blue;
   public Button red;
-  AudioClip clip;
   public SpeechRecognizer speechRecognizer;
 
   public GameObject tracker;
@@ -128,11 +123,11 @@ public class VideoRend : MonoBehaviour
 
   private float pathMrkTrgr = 0f;
 
-  private float pathMrkIntr = 0.1f; 
+  private float pathMrkIntr = 0.1f;
 
-  public float animationDuration = 0.5f; 
+  public float animationDuration = 0.5f;
 
-  public float waitDuration = 0.2f; 
+  public float waitDuration = 0.2f;
 
   void Start()
   {
@@ -195,7 +190,7 @@ public class VideoRend : MonoBehaviour
     // startRecord();
     StartCoroutine(GetOSLocation());
     // StartCoroutine(GetNextMove());
-    
+
 
   }
 
@@ -358,29 +353,33 @@ public class VideoRend : MonoBehaviour
                 }
               }
               var pos = GPSEncoder.GPSToUCS((float)locations[key].lat, (float)locations[key].lon);
-              if( locations[key].obj == 0 || locations[key].obj == 1){
-              
-              var gob = Instantiate(tempG, pos, Quaternion.Euler(0, 0, 0));
-              GameObject ttxt = gob.transform.GetChild(0).gameObject;
-              TextMeshPro mText = ttxt.GetComponent<TextMeshPro>();
-              mText.text = color + " " + num;
-              string tempKey = locations[key].obj.ToString() + locations[key].ctr.ToString();
-              placed_markers[tempKey] = gob;
+              if (locations[key].obj == 0 || locations[key].obj == 1)
+              {
+
+                var gob = Instantiate(tempG, pos, Quaternion.Euler(0, 0, 0));
+                GameObject ttxt = gob.transform.GetChild(0).gameObject;
+                TextMeshPro mText = ttxt.GetComponent<TextMeshPro>();
+                mText.text = color + " " + num;
+                string tempKey = locations[key].obj.ToString() + locations[key].ctr.ToString();
+                placed_markers[tempKey] = gob;
 
               }
-              if(locations[key].obj == 5){
+              if (locations[key].obj == 5)
+              {
                 pos.y = 0f;
-                Instantiate(pathMrkr,pos,Quaternion.Euler(new Vector3(90,0,0)));
+                Instantiate(pathMrkr, pos, Quaternion.Euler(new Vector3(90, 0, 0)));
               }
-              else if(locations[key].obj == 6){
+              else if (locations[key].obj == 6)
+              {
                 pos.y = 0f;
-                Instantiate(pathStart,pos,Quaternion.Euler(new Vector3(90,0,0)));
+                Instantiate(pathStart, pos, Quaternion.Euler(new Vector3(90, 0, 0)));
               }
-              else if(locations[key].obj == 7){
+              else if (locations[key].obj == 7)
+              {
                 pos.y = 0f;
-                Instantiate(pathEnd,pos,Quaternion.Euler(new Vector3(90,0,0)));
+                Instantiate(pathEnd, pos, Quaternion.Euler(new Vector3(90, 0, 0)));
               }
-              
+
             }
 
           }
@@ -397,124 +396,103 @@ public class VideoRend : MonoBehaviour
   }
 
 
-  public Rect ConvertBboxToUnityUI(string[] crds, float W1, float H1, float W2, float H2)
-    {   
-      float y1 = (int)Convert.ToDouble(crds[0]);
-      float x1 = (int)Convert.ToDouble(crds[1]);
-      float y2 = (int)Convert.ToDouble(crds[2]);
-      float x2 = (int)Convert.ToDouble(crds[3]);
-        float w = x2 - x1;
-        float h = y2 - y1;
-
-        float x1Norm = x1 / W1;
-        float y1Norm = y1 / H1;
-        float wNorm = w / W1;
-        float hNorm = h / H1;
-
-        float x1UI = x1Norm * W2;
-        float y1UI = y1Norm * H2;
-        float wUI = wNorm * W2;
-        float hUI = hNorm * H2;
-
-        float offset = w/2.0f;
-
-        return new Rect(W2-x1UI, y1UI+offset, wUI, hUI); 
-    }
-
-
-  private void GenerateDetectionBoxes(string bbox){
-
-
+  private void GenerateDetectionBoxes(string bbox)
+  {
+    
     foreach (GameObject obj in trackerList)
-      {
-          Destroy(obj);
-      }
-      trackerList.Clear();
+    {
+      Destroy(obj);
+    }
+    trackerList.Clear();
 
-    if(bbox != ""){
+    if (bbox != "")
+    {
       string[] boxes = bbox.Split('n');
       foreach (string box in boxes)
-        {
-          string[] crds = box.Split('.');
-          
-          var trkpos = (ConvertBboxToUnityUI(crds,720f,1280f,1080f,1920f));
-          var trcpos = new Vector3(trkpos.y,trkpos.x);
-          GameObject t = Instantiate(detect);
-          t.transform.position = trcpos;
-          t.transform.SetParent(canvas2.transform);
-          trackerList.Add(t);
-          tracker_boxes[t] = box;
-          // Debug.Log($"{x1},{y1},{x2},{y2}");
-          
-        }
+      {
+        string[] crds = box.Split('.');
+        var trkpos = IndF.ConvertBboxToUnityUI(crds, 720f, 1280f, 1080f, 1920f);
+        var trcpos = new Vector3(trkpos.y, trkpos.x);
+        GameObject t = Instantiate(detect);
+        t.transform.position = trcpos;
+        t.transform.SetParent(canvas2.transform);
+        trackerList.Add(t);
+        tracker_boxes[t] = box;
+      }
     }
   }
 
-  private void GenerateTrackerBoxes(string bbox){
+  private void GenerateTrackerBoxes(string bbox)
+  {
 
 
     foreach (GameObject obj in trackingList)
-      {
-          Destroy(obj);
-      }
-      trackingList.Clear();
+    {
+      Destroy(obj);
+    }
+    trackingList.Clear();
 
-    if(bbox != ""){
+    if (bbox != "")
+    {
       string[] boxes = bbox.Split('n');
       foreach (string box in boxes)
-        {
-          string[] crds = box.Split('.');
-          
-          var trkpos = (ConvertBboxToUnityUI(crds,720f,1280f,1080f,1920f));
-          // Debug.Log(trkpos.width);
-          var trcpos = new Vector3(trkpos.y,trkpos.x);
-          // Debug.Log($"Tracker box at{trcpos}");
-          GameObject t = Instantiate(tracker);
-          t.transform.position = trcpos;
-          t.transform.SetParent(canvas2.transform);
-          trackingList.Add(t);
-          // tracker_boxes[t] = box;
-          // Debug.Log($"{x1},{y1},{x2},{y2}");
-          
-        }
+      {
+        string[] crds = box.Split('.');
+
+        var trkpos = IndF.ConvertBboxToUnityUI(crds, 720f, 1280f, 1080f, 1920f);
+        // Debug.Log(trkpos.width);
+        var trcpos = new Vector3(trkpos.y, trkpos.x);
+        // Debug.Log($"Tracker box at{trcpos}");
+        GameObject t = Instantiate(tracker);
+        t.transform.position = trcpos;
+        t.transform.SetParent(canvas2.transform);
+        trackingList.Add(t);
+        // tracker_boxes[t] = box;
+        // Debug.Log($"{x1},{y1},{x2},{y2}");
+
+      }
     }
   }
 
-  private void SendData(string res){
+  private void SendData(string res)
+  {
     string tr = "ooooooooooooooooooooo";
-      byte[] bdata = Encoding.UTF8.GetBytes(tr);
-      client.Send(bdata, bdata.Length, endPoint2);
+    byte[] bdata = Encoding.UTF8.GetBytes(tr);
+    client.Send(bdata, bdata.Length, endPoint2);
     Debug.Log($"{res} iiiiiiiiiiiiiiiiiiiii");
     byte[] data = Encoding.UTF8.GetBytes(res);
     client.Send(data, data.Length, endPoint2);
   }
 
-  private void PathMarker(string activity,string tracker){
+  private void PathMarker(string activity, string tracker)
+  {
     var ctr = 0;
     string[] boxes = tracker.Split('n');
-    if(activity != "" ){
+    if (activity != "")
+    {
       string[] trkr_act = activity.Split('.');
-      foreach (string act in trkr_act){
-        if (act == "1"){
-          if(tracker != ""){
+      foreach (string act in trkr_act)
+      {
+        if (act == "1")
+        {
+          if (tracker != "")
+          {
             var tmp = boxes[ctr];
-            Debug.Log($"{tmp} tracker boxessssssssssssssssssssssssssssss");
             string[] crds = boxes[ctr].Split('.');
-            var trkpos = (ConvertBboxToUnityUI(crds,720f,1280f,1080f,1920f));
-            var pathXpos = trkpos.y + trkpos.width/2.0f;
-            var pathYpos = canv.GetComponent<RectTransform>().rect.height - trkpos.x + trkpos.height/2.0f;
-            // selectedButton = "green";
-            Debug.Log($"{pathXpos},{pathYpos} are midPoints");
-            string result = PayloadPrep(pathXpos.ToString(),pathYpos.ToString(),lat.ToString(),lon.ToString(),alt.ToString(),"5","0","");
+            var trkpos = IndF.ConvertBboxToUnityUI(crds, 720f, 1280f, 1080f, 1920f);
+            var pathXpos = trkpos.y + trkpos.width / 2.0f;
+            var pathYpos = canv.GetComponent<RectTransform>().rect.height - trkpos.x + trkpos.height / 2.0f;
+            string result = IndF.PayloadPrep(pathXpos.ToString(), pathYpos.ToString(), lat.ToString(), lon.ToString(), alt.ToString(), "5", "0", "");
             // string result = string.Join(",", payload.Select(x => '"' + x.Key + '"' + ": " + '"' + x.Value + '"'));
             Debug.Log(result);
             SendData(result);
-            ctr +=1;
-            }
+            ctr += 1;
+          }
           // Debug.Log("Tracker active");
         }
-        if (act == "0"){
-          
+        if (act == "0")
+        {
+
           Debug.Log("Tracker inactivee");
         }
       }
@@ -522,42 +500,43 @@ public class VideoRend : MonoBehaviour
     Debug.Log("Path marking triggered");
   }
 
+  // Animate object indicators 
   IEnumerator AnimateArrow(Transform arrowTransform, float moveDuration, float waitTime)
+  {
+    Vector3 forwardDirection = arrowTransform.up;
+    Vector3 startPos = arrowTransform.localPosition;
+    Vector3 forwardPos = startPos + (forwardDirection * 10);
+    Vector3 backwardPos = startPos - (forwardDirection * 10);
+
+    while (true)
     {
-        Vector3 forwardDirection = arrowTransform.up; 
-        Vector3 startPos = arrowTransform.localPosition;
-        Vector3 forwardPos = startPos + (forwardDirection * 10); 
-        Vector3 backwardPos = startPos - (forwardDirection * 10); 
 
-        while (true) 
-        {
-            
-            float elapsedTime = 0;
-            while (elapsedTime < moveDuration)
-            {
-                arrowTransform.localPosition = Vector3.Lerp(startPos, forwardPos, elapsedTime / moveDuration);
-                elapsedTime += Time.deltaTime;
-                yield return null;
-            }
+      float elapsedTime = 0;
+      while (elapsedTime < moveDuration)
+      {
+        arrowTransform.localPosition = Vector3.Lerp(startPos, forwardPos, elapsedTime / moveDuration);
+        elapsedTime += Time.deltaTime;
+        yield return null;
+      }
 
-            arrowTransform.localPosition = forwardPos;
+      arrowTransform.localPosition = forwardPos;
 
-            yield return new WaitForSeconds(waitTime);
+      yield return new WaitForSeconds(waitTime);
 
-            
-            elapsedTime = 0;
-            while (elapsedTime < moveDuration)
-            {
-                arrowTransform.localPosition = Vector3.Lerp(forwardPos, backwardPos, elapsedTime / moveDuration);
-                elapsedTime += Time.deltaTime;
-                yield return null;
-            }
 
-            arrowTransform.localPosition = backwardPos;
+      elapsedTime = 0;
+      while (elapsedTime < moveDuration)
+      {
+        arrowTransform.localPosition = Vector3.Lerp(forwardPos, backwardPos, elapsedTime / moveDuration);
+        elapsedTime += Time.deltaTime;
+        yield return null;
+      }
 
-            yield return new WaitForSeconds(waitTime);
-        }
+      arrowTransform.localPosition = backwardPos;
+
+      yield return new WaitForSeconds(waitTime);
     }
+  }
 
   //Update is called once per frame
   void Update()
@@ -569,7 +548,7 @@ public class VideoRend : MonoBehaviour
       byte[] data = client.Receive(ref endPoint);
       string text = Encoding.UTF8.GetString(data);
       var values = JsonConvert.DeserializeObject<Dictionary<string, string>>(text);
-      
+
       lat = (float)Convert.ToDouble(values["lat"]);
       lon = (float)Convert.ToDouble(values["lon"]);
       alt = (float)Convert.ToDouble(values["alt"]);
@@ -671,15 +650,15 @@ public class VideoRend : MonoBehaviour
       GenerateTrackerBoxes(values["tracker"]);
       pathMrkTrgr += Time.deltaTime;
       Debug.Log("ooooooooooooooooooooooooooooooooooooooo");
-        // Check if it's time to call the function.
-        if (pathMrkTrgr >= pathMrkIntr)
-        {
-            PathMarker(values["tracker_status"],values["tracker"]);
+      // Check if it's time to call the function.
+      if (pathMrkTrgr >= pathMrkIntr)
+      {
+        PathMarker(values["tracker_status"], values["tracker"]);
 
-            // Reset the time elapsed.
-            pathMrkTrgr = 0f;
-        }
-     
+        // Reset the time elapsed.
+        pathMrkTrgr = 0f;
+      }
+
 
     }
 
@@ -699,55 +678,55 @@ public class VideoRend : MonoBehaviour
 
       if (!objectToArrowMap.ContainsKey(placed_markers[key]))
       {
-          arrowObject = Instantiate(arrow);
-          // GameObject ttxt = arrowObject.transform.GetChild(0).gameObject;
-          TextMeshProUGUI mText = arrowObject.GetComponentInChildren<TextMeshProUGUI>();;
-          mText.text = placed_markers[key].transform.GetChild(0).gameObject.GetComponent<TextMeshPro>().text;
-          // arrowObject.transform.GetChild(0).gameObject.GetComponent<TextMeshPro>().text = placed_markers[key].transform.GetChild(0).gameObject.GetComponent<TextMeshPro>().text;
-          arrowObject.transform.SetParent(canvas2.transform);
-          objectToArrowMap[placed_markers[key]] = arrowObject;
+        arrowObject = Instantiate(arrow);
+        // GameObject ttxt = arrowObject.transform.GetChild(0).gameObject;
+        TextMeshProUGUI mText = arrowObject.GetComponentInChildren<TextMeshProUGUI>(); ;
+        mText.text = placed_markers[key].transform.GetChild(0).gameObject.GetComponent<TextMeshPro>().text;
+        // arrowObject.transform.GetChild(0).gameObject.GetComponent<TextMeshPro>().text = placed_markers[key].transform.GetChild(0).gameObject.GetComponent<TextMeshPro>().text;
+        arrowObject.transform.SetParent(canvas2.transform);
+        objectToArrowMap[placed_markers[key]] = arrowObject;
       }
       else
       {
-          arrowObject = objectToArrowMap[placed_markers[key]];
+        arrowObject = objectToArrowMap[placed_markers[key]];
       }
-
+      // Show indicators for objects that are not visible in the screen
       if (screenPos.x < 0 || screenPos.x > Screen.width || screenPos.y < 0 || screenPos.y > Screen.height)
       {
-          arrowObject.SetActive(true);
-          
-          Vector2 canvasSize = canvas2.GetComponent<RectTransform>().sizeDelta;
-          Vector2 canvasPosition = new Vector2(screenPos.x / Screen.width * canvasSize.x, screenPos.y / Screen.height * canvasSize.y) - canvasSize * 0.5f;
+        arrowObject.SetActive(true);
 
-          Vector3 screenCenter = new Vector3(Screen.width * 0.5f, Screen.height * 0.5f, screenPos.z);
-          Vector3 direction = screenPos - screenCenter;
-          direction.Normalize();
+        Vector2 canvasSize = canvas2.GetComponent<RectTransform>().sizeDelta;
+        Vector2 canvasPosition = new Vector2(screenPos.x / Screen.width * canvasSize.x, screenPos.y / Screen.height * canvasSize.y) - canvasSize * 0.5f;
 
-          float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
-          arrowObject.transform.rotation = Quaternion.Euler(0, 0, angle - 90);
+        Vector3 screenCenter = new Vector3(Screen.width * 0.5f, Screen.height * 0.5f, screenPos.z);
+        Vector3 direction = screenPos - screenCenter;
+        direction.Normalize();
 
-          float clampBorder = 100.0f; // Adjust this value to set how far inside the screen's edge the marker appears
-          canvasPosition = new Vector2(
-              Mathf.Clamp(canvasPosition.x, -canvasSize.x * 0.5f + clampBorder, canvasSize.x * 0.5f - clampBorder),
-              Mathf.Clamp(canvasPosition.y, -canvasSize.y * 0.5f + clampBorder, canvasSize.y * 0.5f - clampBorder)
-          );
+        float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
+        arrowObject.transform.rotation = Quaternion.Euler(0, 0, angle - 90);
 
-          arrowObject.transform.localPosition = canvasPosition;
-          if (!animationRunningMap.ContainsKey(arrowObject) || !animationRunningMap[arrowObject])
-            {
-                StartCoroutine(AnimateArrow(arrowObject.transform, animationDuration, waitDuration));
-                animationRunningMap[arrowObject] = true;
-            }
+        float clampBorder = 100.0f; // Adjust this value to set how far inside the screen's edge the marker appears
+        canvasPosition = new Vector2(
+            Mathf.Clamp(canvasPosition.x, -canvasSize.x * 0.5f + clampBorder, canvasSize.x * 0.5f - clampBorder),
+            Mathf.Clamp(canvasPosition.y, -canvasSize.y * 0.5f + clampBorder, canvasSize.y * 0.5f - clampBorder)
+        );
+
+        arrowObject.transform.localPosition = canvasPosition;
+        if (!animationRunningMap.ContainsKey(arrowObject) || !animationRunningMap[arrowObject])
+        {
+          StartCoroutine(AnimateArrow(arrowObject.transform, animationDuration, waitDuration));
+          animationRunningMap[arrowObject] = true;
+        }
       }
       else
       {
-          arrowObject.SetActive(false);
-          if (animationRunningMap.ContainsKey(arrowObject) && animationRunningMap[arrowObject])
-            {
-                StopCoroutine(AnimateArrow(arrowObject.transform, animationDuration, waitDuration));
-                animationRunningMap[arrowObject] = false;
-            }
-          Debug.Log("Visibleee");
+        arrowObject.SetActive(false);
+        if (animationRunningMap.ContainsKey(arrowObject) && animationRunningMap[arrowObject])
+        {
+          StopCoroutine(AnimateArrow(arrowObject.transform, animationDuration, waitDuration));
+          animationRunningMap[arrowObject] = false;
+        }
+        Debug.Log("Visibleee");
       }
     }
 
@@ -769,10 +748,10 @@ public class VideoRend : MonoBehaviour
       world_pos2.x = 1.0f * world_pos2.x;
       world_pos2.z = 1.0f * world_pos2.z;
       Debug.Log(world_pos2);
-      InstObj(world_pos2,values2["obj"]);
+      InstObj(world_pos2, values2["obj"]);
 
       // if (values2["obj"] == "0" || values2["obj"] == "1" || values2["obj"] == "2"){
-        Location lpl = new Location();
+      Location lpl = new Location();
       lpl.ctr = int.Parse(values2["ctr"]);
       lpl.obj = int.Parse(values2["obj"]);
       lpl.lat = Convert.ToDouble(values2["lat"]);
@@ -788,33 +767,36 @@ public class VideoRend : MonoBehaviour
         Debug.Log(response);
       });
       // }
-      
+
 
     }
 
-    if (client3.Available >0){
+    if (client3.Available > 0)
+    {
       byte[] data = client3.Receive(ref endPoint);
       string text = Encoding.UTF8.GetString(data);
       var values3 = JsonConvert.DeserializeObject<Dictionary<string, string>>(text);
       // Debug.Log(values3["point"]);
       var obj = "";
-      if (values3["point"]=="start"){
+      if (values3["point"] == "start")
+      {
         obj = "6";
       }
-      else if (values3["point"]=="last"){
+      else if (values3["point"] == "last")
+      {
         obj = "7";
       }
       string[] crds = values3["box"].Split('.');
-      var trkpos = (ConvertBboxToUnityUI(crds,720f,1280f,1080f,1920f));
-      var pathXpos = trkpos.y + trkpos.width/2.0f;
-      var pathYpos = canv.GetComponent<RectTransform>().rect.height - trkpos.x + trkpos.height/2.0f;
+      var trkpos = IndF.ConvertBboxToUnityUI(crds, 720f, 1280f, 1080f, 1920f);
+      var pathXpos = trkpos.y + trkpos.width / 2.0f;
+      var pathYpos = canv.GetComponent<RectTransform>().rect.height - trkpos.x + trkpos.height / 2.0f;
       Debug.Log($"{pathXpos},{pathYpos} are midPointsssssssssssssssssssssssssssssssssssss");
-      string result = PayloadPrep(pathXpos.ToString(),pathYpos.ToString(),lat.ToString(),lon.ToString(),alt.ToString(),obj,"0","");
+      string result = IndF.PayloadPrep(pathXpos.ToString(), pathYpos.ToString(), lat.ToString(), lon.ToString(), alt.ToString(), obj, "0", "");
       // Debug.Log(result);
       SendData(result);
-      
+
     }
-    
+
 
     //Placing object when user clicks on the screen
     if (Input.GetMouseButtonDown(0))
@@ -827,18 +809,20 @@ public class VideoRend : MonoBehaviour
 
       foreach (RaycastResult obj in resList)
       {
-          if(tracker_boxes.ContainsKey(obj.gameObject)){
-            // Debug.Log(tracker_boxes[obj.gameObject]);
-            Dictionary<string, string> payload = new Dictionary<string, string>();
-            payload.Add("track",tracker_boxes[obj.gameObject]);
-            string result = string.Join(",", payload.Select(x => '"' + x.Key + '"' + ": " + '"' + x.Value + '"'));
-            Debug.Log(result);
-            byte[] data = Encoding.UTF8.GetBytes(result);
-            client2.Send(data, data.Length, endPoint);
-          }
-      } 
+        if (tracker_boxes.ContainsKey(obj.gameObject))
+        {
+          // Debug.Log(tracker_boxes[obj.gameObject]);
+          Dictionary<string, string> payload = new Dictionary<string, string>();
+          payload.Add("track", tracker_boxes[obj.gameObject]);
+          string result = string.Join(",", payload.Select(x => '"' + x.Key + '"' + ": " + '"' + x.Value + '"'));
+          Debug.Log(result);
+          byte[] data = Encoding.UTF8.GetBytes(result);
+          client2.Send(data, data.Length, endPoint);
+        }
+      }
       Vector3 mousePos = Input.mousePosition;
-      if(selectedButton !=""){
+      if (selectedButton != "")
+      {
 
 
         if (resList.Count == 1)
@@ -848,7 +832,7 @@ public class VideoRend : MonoBehaviour
           var obj = "";
           var ctr = "";
           if (selectedButton == "red")
-          { 
+          {
             obj = "0";
             ctr = RedCount.ToString();
           }
@@ -863,35 +847,17 @@ public class VideoRend : MonoBehaviour
             ctr = BlueCount.ToString();
           }
 
-          string result = PayloadPrep(mousePos.x.ToString(),mouse_y.ToString(),lat.ToString(),lon.ToString(),alt.ToString(),obj,ctr,"");
-         
+          string result = IndF.PayloadPrep(mousePos.x.ToString(), mouse_y.ToString(), lat.ToString(), lon.ToString(), alt.ToString(), obj, ctr, "");
+
           Debug.Log(result);
           byte[] data = Encoding.UTF8.GetBytes(result);
           client.Send(data, data.Length, endPoint);
-          
+
         }
       }
     }
 
   }
-
-
-  private string PayloadPrep(string xpos, string ypos, string lat, string lon, string alt, string obj, string ctr, string track){
-    Dictionary<string, string> payload = new Dictionary<string, string>();
-    payload.Add("xpos", xpos);
-    payload.Add("ypos", ypos);
-    payload.Add("lat", lat);
-    payload.Add("alt", alt);
-    payload.Add("lon", lon);
-    payload.Add("resh", canv.GetComponent<RectTransform>().rect.height.ToString());
-    payload.Add("resw", canv.GetComponent<RectTransform>().rect.width.ToString());
-    payload.Add("track",track);
-    payload.Add("obj", obj);
-    payload.Add("ctr", ctr);
-    string result = string.Join(",", payload.Select(x => '"' + x.Key + '"' + ": " + '"' + x.Value + '"'));
-    return result;
-  }
-
 
   private void ScaleObjects(float scale)
   {
@@ -904,29 +870,23 @@ public class VideoRend : MonoBehaviour
     }
   }
 
-
-
-  private void GreenButton()
+  public void GreenButton()
   {
     Debug.Log("You have clicked Green Button!");
     selectedButton = "green";
     resetButtons();
     green.interactable = false;
-
-
   }
 
-  private void RedButton()
+  public void RedButton()
   {
     Debug.Log("You have clicked Red Button!");
     selectedButton = "red";
     resetButtons();
     red.interactable = false;
-
-
   }
 
-  private void BlueButton()
+  public void BlueButton()
   {
     Debug.Log("You have clicked Blue Button!");
     selectedButton = "blue";
@@ -934,25 +894,8 @@ public class VideoRend : MonoBehaviour
     blue.interactable = false;
   }
 
-
-
-  public void startRecord()
-  {
-    Debug.Log("Recording started");
-
-    //clip = Microphone.Start(Microphone.devices[0], true, 10, AudioSettings.outputSampleRate);
-    //Debug.Log(clip.length);
-    speechRecognizer.StartProcessing();
-  }
-  public void stopRecord()
-  {
-    Debug.Log("Recording stopped");
-    speechRecognizer.StopProcessing();
-
-
-  }
   // Placing object based on user voice input.
-  void sendUserInput(float x, float y, string clr, string grd)
+  public void sendUserInput(float x, float y, string clr, string grd)
   {
     var dobj = Instantiate(dialogue);
     dg = dobj.GetComponentInChildren<TextMeshProUGUI>();
@@ -961,7 +904,7 @@ public class VideoRend : MonoBehaviour
     var obj = "";
     var ctr = "";
     if (selectedButton == "red")
-    { 
+    {
       obj = "0";
       ctr = RedCount.ToString();
     }
@@ -975,202 +918,25 @@ public class VideoRend : MonoBehaviour
       obj = "2";
       ctr = BlueCount.ToString();
     }
-    string result = PayloadPrep(x.ToString(),y.ToString(),lat.ToString(),lon.ToString(),alt.ToString(),obj,ctr,"");
+    string result = IndF.PayloadPrep(x.ToString(), y.ToString(), lat.ToString(), lon.ToString(), alt.ToString(), obj, ctr, "");
     // string result = string.Join(",", payload.Select(x => '"' + x.Key + '"' + ": " + '"' + x.Value + '"'));
     byte[] data = Encoding.UTF8.GetBytes(result);
     client.Send(data, data.Length, endPoint);
   }
 
-  public void OnPartialResult(PartialResult partialResult)
-  {
-    Debug.Log(partialResult.partial);
-    string[] keywords = partialResult.partial.Split(' ');
-
-  }
 
   // Record user voice inputs and place objects in respective grid.
   private void OnResult(Result result)
   {
     Debug.Log(result.text);
-
     string[] keywords = result.text.Split(' ');
-
-    Processtext(keywords);
-
+    textProcessor.Processtext(keywords);
   }
 
-  // Process user voice transcript to determine grid and color of object to be placed.
-  private void Processtext(string[] keywords)
-  {
-    // Resolution of screen 
-    int width = (int)canv.GetComponent<RectTransform>().rect.width;
-    int height = (int)canv.GetComponent<RectTransform>().rect.height;
-    string[] colors = { "victim", "gun" };
-    string finalColor = "";
-    string finalGrid = "";
-    int finalGridNum = 0;
-    string[] selectedColor = keywords.Intersect(colors).ToArray();
-    if (selectedColor.Length != 1)
-    {
-      Debug.Log("Marker color error");
-      return;
-    }
-    finalColor = selectedColor[0];
-    string[] numbers =  {
-            "one", "two", "three", "four", "five",
-            "six", "seven", "eight", "nine", "ten",
-            "eleven", "twelve", "thirteen", "fourteen", "fifteen",
-            "sixteen", "seventeen", "eighteen", "nineteen", "twenty",
-        };
 
-    string[] selectedNumber = keywords.Intersect(numbers).ToArray();
-    // Condition to check if there are valid numbers in user voice input. (1 and 2 are valid inputs)
-    //(2 is valid because twenty three is combination of twenty and three)
-    if (selectedNumber.Length < 1 || selectedNumber.Length > 2)
-    {
-      Debug.Log("Grid Number error");
-      return;
-    }
-    // Handling case of numbers greater than twenty.
-    if (selectedNumber.Contains("twenty"))
-    {
-      if (selectedNumber.Length == 1)
-      {
-        finalGrid = "twenty";
-      }
-      if (selectedNumber.Length == 2)
-      {
-        if (selectedNumber[0] == "twenty")
-        {
-          if (selectedNumber[1] == "one")
-          {
-            finalGrid = "twenty one";
-          }
-          else if (selectedNumber[1] == "two")
-          {
-            finalGrid = "twenty two";
-          }
-          else if (selectedNumber[1] == "three")
-          {
-            finalGrid = "twenty three";
-          }
-          else if (selectedNumber[1] == "four")
-          {
-            finalGrid = "twenty four";
-          }
-          else if (selectedNumber[1] == "five")
-          {
-            finalGrid = "twenty five";
-          }
-          else
-          {
-            Debug.Log("Grid Number error");
-          }
-        }
-        else
-        {
-          Debug.Log("Grid Number error");
-          return;
-        }
-      }
-    }
-    else
-    {
-      if (selectedNumber.Length != 1)
-      {
-        Debug.Log("Grid Number error");
-        return;
-      }
-      else
-      {
-        finalGrid = selectedNumber[0];
-      }
-    }
-    Debug.Log(finalGrid);
-    Debug.Log(finalColor);
-    Dictionary<string, int> numberDictionary = new Dictionary<string, int>
-    {
-        { "one", 1 },{ "two", 2 },{ "three", 3 },{ "four", 4 },{ "five", 5 },
-        { "six", 6 },{ "seven", 7 },{ "eight", 8 },{ "nine", 9 },{ "ten", 10 },
-        { "eleven", 11 },{ "twelve", 12 },{ "thirteen", 13 },{ "fourteen", 14 },{ "fifteen", 15 },
-        { "sixteen", 16 },{ "seventeen", 17 },{ "eighteen", 18 },{ "nineteen", 19 },{ "twenty", 20 },
-        { "twenty one", 21 },{ "twenty two", 22 },{ "twenty three", 23 },{ "twenty four", 24 },{ "twenty five", 25 }
-    };
-    if (numberDictionary.ContainsKey(finalGrid))
-    {
-      finalGridNum = numberDictionary[finalGrid];
-    }
-    else
-    {
-      Debug.Log("Grid Number error");
-      return;
-    }
-    Debug.Log(finalGridNum);
-    int tempSN = curgrid + 1;
-    if (tempSN > 5)
-    {
-      tempSN = 5;
-    }
-    var midpoints = CalculateMidpoints(width, height, tempSN);
-
-    if (midpoints.ContainsKey(finalGridNum - 1))
-    {
-      Debug.Log(midpoints[finalGridNum - 1].Item1);
-      Debug.Log(midpoints[finalGridNum - 1].Item2);
-      if (finalColor == "victim")
-      {
-        selectedButton = "green";
-      }
-      if (finalColor == "gun")
-      {
-        selectedButton = "red";
-      }
-      sendUserInput(midpoints[finalGridNum - 1].Item1, midpoints[finalGridNum - 1].Item2, finalColor, finalGrid);
-      if (selectedButton == "green")
-      {
-        GreenButton();
-      }
-      else if (selectedButton == "red")
-      {
-        RedButton();
-      }
-      else if (selectedButton == "blue")
-      {
-        BlueButton();
-      }
-    }
-    else
-    {
-      Debug.Log("Grid Number error");
-      return;
-    }
-  }
-
-  // Calculating midpoints of each cell in NxN grid.
-  private Dictionary<int, Tuple<int, int>> CalculateMidpoints(int width, int height, int gridsize)
-  {
-    var midpoints = new Dictionary<int, Tuple<int, int>>();
-
-    int cellWidth = width / gridsize;
-    int cellHeight = height / gridsize;
-
-    for (int i = 0; i < gridsize; i++)
-    {
-      for (int j = 0; j < gridsize; j++)
-      {
-        // Calculate midpoint of each grid cell
-        int midpointX = (j * cellWidth) + (cellWidth / 2);
-        int midpointY = (i * cellHeight) + (cellHeight / 2);
-
-        midpoints.Add(i * gridsize + j, new Tuple<int, int>(midpointX, midpointY));
-      }
-    }
-
-    return midpoints;
-  }
 
   // Creating markers.
-  private void InstObj(Vector3 wp,string oj)
+  private void InstObj(Vector3 wp, string oj)
   {
     ang.x = 90;
     string mclr = "";
@@ -1200,7 +966,8 @@ public class VideoRend : MonoBehaviour
       BlueCount += 1;
       tempKey2 = "2";
     }
-    if(oj == "1" || oj == "0"){
+    if (oj == "1" || oj == "0")
+    {
       var gob = Instantiate(tp, wp, Quaternion.Euler(ang));
       GameObject ttxt = gob.transform.GetChild(0).gameObject;
       TextMeshPro mText = ttxt.GetComponent<TextMeshPro>();
@@ -1208,21 +975,24 @@ public class VideoRend : MonoBehaviour
       string tempKey = tempKey2 + ctr;
       placed_markers[tempKey] = gob;
     }
-    else if(oj == "5"){
+    else if (oj == "5")
+    {
       wp.y = 0f;
-      Instantiate(pathMrkr,wp,Quaternion.Euler(new Vector3(90,0,0)));
+      Instantiate(pathMrkr, wp, Quaternion.Euler(new Vector3(90, 0, 0)));
     }
 
-    else if(oj == "6"){
+    else if (oj == "6")
+    {
       wp.y = 0f;
-      Instantiate(pathStart,wp,Quaternion.Euler(new Vector3(90,0,0)));
+      Instantiate(pathStart, wp, Quaternion.Euler(new Vector3(90, 0, 0)));
     }
 
-    else if(oj == "7"){
+    else if (oj == "7")
+    {
       wp.y = 0f;
-      Instantiate(pathEnd,wp,Quaternion.Euler(new Vector3(90,0,0)));
+      Instantiate(pathEnd, wp, Quaternion.Euler(new Vector3(90, 0, 0)));
     }
-    
+
 
     resetButtons();
     selectedButton = "";
