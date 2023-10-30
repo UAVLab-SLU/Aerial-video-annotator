@@ -480,18 +480,6 @@ public class VideoRend : MonoBehaviour
     }
   }
 
-  private void StartingAndLastPoint(string keyToCheck){
-    if (tracker_stat.ContainsKey(keyToCheck))
-        {
-            Debug.Log("Last point createddd");
-        }
-        else
-        {   
-          tracker_stat[keyToCheck] = true;
-            Debug.Log("Starting point createddddddd");
-        }
-  }
-
   private void SendData(string res){
     string tr = "ooooooooooooooooooooo";
       byte[] bdata = Encoding.UTF8.GetBytes(tr);
