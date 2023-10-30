@@ -1,7 +1,7 @@
 
 
 class ObjectDetector:
-    def __init__(self, model_path='best.pt'):
+    def __init__(self, model_path='ObjectDetectorYOLO.pt'):
         from ultralytics import YOLO
         self.model = YOLO(model_path)
         self.set_parameters()

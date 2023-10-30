@@ -31,8 +31,6 @@ import json
 import pandas as pd
 import GeoCoordinationHandler as GC
 from object_detector import ObjectDetector
-import math
-from pyquaternion import Quaternion
 import requests
 # Create UDP socket to use for sending (and receiving)
 sock = U.UdpComms(udpIP="127.0.0.1", portTX=8080, portRX=8081, enableRX=True, suppressWarnings=True)
@@ -55,7 +53,7 @@ device = torch.device('cuda' if cfg.CUDA else 'cpu')
 model = ModelBuilderADAPN()
 
 # load model
-model = load_pretrain(model, 'general++.pth').eval().to(device)
+model = load_pretrain(model, 'SiamAPNPlusModel.pth').eval().to(device)
 
 # build tracker
 
