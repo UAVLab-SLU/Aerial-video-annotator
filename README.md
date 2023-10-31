@@ -1,8 +1,11 @@
 # AerialARFramework
-Unity application to augment virtual content in aerial video frames.
+### Unity application to augment virtual content in aerial video.
 
-This unity project is to simulate drone movement in a virtual world and calculate geolocation of user click. Virtual objects can be augmented at Points of interest.
-Frames and metadata is received through a UDP socket from a python server. Frames are rendered continously by using a RawImage in Unity canvas and metadata is used to move camera in unity 3d space. Users can watch the live drone feed and annotate the Points of interest by using UI. GeoLocation of the annotations are calcuated by using a python script. When user marks an annotation, data is sent back to python server. Python server calculates the geolocation and sends back the data. Virtual markers are augmented on the Unity canvas at calculated geoLocation in unity 3d space.
-GeoLocation metadata is pushed to cloud Realtime database to share it across systems. 
-Python server and Unity application cannot run in a same computer as python server is connected to drone using Wifi and Unity application cannot access internet. To overcome this, Unity application is run in a different machione and we are using ethernet cable to connect python server and send data using UDP sockets.
+This Unity project simulates drone movement within a virtual world, rendering live footage from a drone and allowing users to annotate points of interest (POIs). It integrates with a Python server to provide frame rendering and geolocation calculations.
+
+Live drone footage is continuously presented to users through frames received via a UDP socket from the Python server. These frames are rendered using a RawImage on a Unity canvas. Concurrently, metadata from the Python server adjusts the Unity camera's position in the 3D space, mirroring the real-time movements of the drone.
+
+One of the project's core features is the ability for users to annotate POIs on the live drone feed. When an annotation is made, a data request is sent to the Python server. The server, in turn, calculates the real-world geolocation of the annotation. Once computed, this geolocation is sent back to Unity, where virtual markers are augmented on the canvas, aligned with the respective 3D position.
+
+To ensure data accessibility and sharing, the geolocation metadata is seamlessly pushed to a cloud-based real-time database.
 
