@@ -15,6 +15,10 @@ public class TextProcessor : MonoBehaviour
 
     private VideoRend videoRend;
     private IndependentFun IndF;
+    void Start(){
+        videoRend = FindObjectOfType<VideoRend>();
+        IndF = FindObjectOfType<IndependentFun>();
+    }
     public void Processtext(string[] keywords)
     {
         // Resolution of screen 

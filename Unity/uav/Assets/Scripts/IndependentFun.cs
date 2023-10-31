@@ -14,6 +14,11 @@ public class IndependentFun : MonoBehaviour
 {
 
     private VideoRend videoRend;
+    public TextProcessor textProcessor;
+    void Start(){
+        videoRend = FindObjectOfType<VideoRend>();
+        textProcessor = FindObjectOfType<TextProcessor>();
+    }
     public string PayloadPrep(string xpos, string ypos, string lat, string lon, string alt, string obj, string ctr, string track)
     {
         Dictionary<string, string> payload = new Dictionary<string, string>();
@@ -58,6 +63,7 @@ public class IndependentFun : MonoBehaviour
     // Convert Bounding boxes of objects from python to Unity bounding boxes
     public Rect ConvertBboxToUnityUI(string[] crds, float W1, float H1, float W2, float H2)
     {
+        Debug.Log("dddddddddddddddddddddddddd");
         float y1 = (int)Convert.ToDouble(crds[0]);
         float x1 = (int)Convert.ToDouble(crds[1]);
         float y2 = (int)Convert.ToDouble(crds[2]);
