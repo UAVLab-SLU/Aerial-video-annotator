@@ -50,8 +50,8 @@ public class VideoRend : MonoBehaviour
   IPEndPoint endPoint;
   IPEndPoint endPoint2;
 
-  private IndependentFun IndF;
-  private TextProcessor textProcessor;
+  public IndependentFun IndF;
+  public TextProcessor textProcessor;
   public int curgrid;
 
   private Dictionary<string, GameObject> placed_markers = new Dictionary<string, GameObject>();
@@ -190,6 +190,8 @@ public class VideoRend : MonoBehaviour
     // startRecord();
     StartCoroutine(GetOSLocation());
     // StartCoroutine(GetNextMove());
+    IndF = FindObjectOfType<IndependentFun>();
+    textProcessor = FindObjectOfType<TextProcessor>();
 
 
   }
