@@ -123,7 +123,7 @@ public class VideoRend : MonoBehaviour
 
   private float pathMrkTrgr = 0f;
 
-  private float pathMrkIntr = 0.1f;
+  private float pathMrkIntr = 1f;
 
   public float animationDuration = 0.5f;
 
@@ -458,9 +458,9 @@ public class VideoRend : MonoBehaviour
 
   private void SendData(string res)
   {
-    string tr = "ooooooooooooooooooooo";
-    byte[] bdata = Encoding.UTF8.GetBytes(tr);
-    client.Send(bdata, bdata.Length, endPoint2);
+    // string tr = "ooooooooooooooooooooo";
+    // byte[] bdata = Encoding.UTF8.GetBytes(tr);
+    // client.Send(bdata, bdata.Length, endPoint2);
     Debug.Log($"{res} iiiiiiiiiiiiiiiiiiiii");
     byte[] data = Encoding.UTF8.GetBytes(res);
     client.Send(data, data.Length, endPoint2);
