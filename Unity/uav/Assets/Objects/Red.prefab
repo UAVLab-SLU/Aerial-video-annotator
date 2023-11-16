@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 9079646911373136415}
   - component: {fileID: 71466809570201700}
   - component: {fileID: 2150678196387353648}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: Text
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -167,12 +167,12 @@ MonoBehaviour:
   m_margin: {x: 0, y: 0.033569574, z: 0, w: 0.06817627}
   m_isUsingLegacyAnimationComponent: 0
   m_isVolumetricText: 0
-  _SortingLayer: 0
-  _SortingLayerID: 0
-  _SortingOrder: 0
   m_hasFontAssetChanged: 0
   m_renderer: {fileID: 9079646911373136415}
   m_maskType: 0
+  _SortingLayer: 0
+  _SortingLayerID: 0
+  _SortingOrder: 0
 --- !u!210 &2150678196387353648
 SortingGroup:
   m_ObjectHideFlags: 0
@@ -195,7 +195,7 @@ GameObject:
   - component: {fileID: 1961528569870676089}
   - component: {fileID: 1961528569870676090}
   - component: {fileID: 1961528569870676088}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: Red
   m_TagString: Untagged
   m_Icon: {fileID: 0}

@@ -356,7 +356,7 @@ public class VideoRend : MonoBehaviour
               if (locations[key].obj == 0 || locations[key].obj == 1)
               {
 
-                var gob = Instantiate(tempG, pos, Quaternion.Euler(0, 0, 0));
+                var gob = Instantiate(tempG, pos, Quaternion.Euler(90, 0, 0));
                 GameObject ttxt = gob.transform.GetChild(0).gameObject;
                 TextMeshPro mText = ttxt.GetComponent<TextMeshPro>();
                 mText.text = color + " " + num;
@@ -411,7 +411,7 @@ public class VideoRend : MonoBehaviour
       foreach (string box in boxes)
       {
         string[] crds = box.Split('.');
-        var trkpos = IndF.ConvertBboxToUnityUI(crds, 720f, 1280f, 1080f, 1920f);
+        var trkpos = ConvertBboxToUnityUI(crds, 720f, 1280f, 1080f, 1920f);
         var trcpos = new Vector3(trkpos.y, trkpos.x);
         GameObject t = Instantiate(detect);
         t.transform.position = trcpos;
@@ -439,7 +439,7 @@ public class VideoRend : MonoBehaviour
       {
         string[] crds = box.Split('.');
 
-        var trkpos = IndF.ConvertBboxToUnityUI(crds, 720f, 1280f, 1080f, 1920f);
+        var trkpos = ConvertBboxToUnityUI(crds, 720f, 1280f, 1080f, 1920f);
         // Debug.Log(trkpos.width);
         var trcpos = new Vector3(trkpos.y, trkpos.x);
         // Debug.Log($"Tracker box at{trcpos}");
@@ -479,7 +479,7 @@ public class VideoRend : MonoBehaviour
           {
             var tmp = boxes[ctr];
             string[] crds = boxes[ctr].Split('.');
-            var trkpos = IndF.ConvertBboxToUnityUI(crds, 720f, 1280f, 1080f, 1920f);
+            var trkpos = ConvertBboxToUnityUI(crds, 720f, 1280f, 1080f, 1920f);
             var pathXpos = trkpos.y + trkpos.width / 2.0f;
             var pathYpos = canv.GetComponent<RectTransform>().rect.height - trkpos.x + trkpos.height / 2.0f;
             string result = IndF.PayloadPrep(pathXpos.ToString(), pathYpos.ToString(), lat.ToString(), lon.ToString(), alt.ToString(), "5", "0", "");
@@ -499,6 +499,30 @@ public class VideoRend : MonoBehaviour
     }
     Debug.Log("Path marking triggered");
   }
+
+  public Rect ConvertBboxToUnityUI(string[] crds, float W1, float H1, float W2, float H2)
+    {
+        float y1 = (int)Convert.ToDouble(crds[0]);
+        float x1 = (int)Convert.ToDouble(crds[1]);
+        float y2 = (int)Convert.ToDouble(crds[2]);
+        float x2 = (int)Convert.ToDouble(crds[3]);
+        float w = x2 - x1;
+        float h = y2 - y1;
+
+        float x1Norm = x1 / W1;
+        float y1Norm = y1 / H1;
+        float wNorm = w / W1;
+        float hNorm = h / H1;
+
+        float x1UI = x1Norm * W2;
+        float y1UI = y1Norm * H2;
+        float wUI = wNorm * W2;
+        float hUI = hNorm * H2;
+
+        float offset = w / 2.0f;
+
+        return new Rect(W2 - x1UI, y1UI + offset, wUI, hUI);
+    }
 
   // Animate object indicators 
   IEnumerator AnimateArrow(Transform arrowTransform, float moveDuration, float waitTime)
@@ -630,7 +654,7 @@ public class VideoRend : MonoBehaviour
         {
           ht = -1.0f * ht;
         }
-        canv.planeDistance = ht + 1;
+        canv.planeDistance = 20;
       }
       //Converting Quaternion from NED to ENU.
       rotat = new Quaternion(-y, z, -x, w);
@@ -662,73 +686,73 @@ public class VideoRend : MonoBehaviour
 
     }
 
-    foreach (var key in placed_markers.Keys)
-    {
-      Vector3 directionToCamera = placed_markers[key].transform.position - Camera.main.transform.position;
-      Quaternion lookRotation = Quaternion.LookRotation(directionToCamera, Vector3.up);
-      placed_markers[key].transform.rotation = lookRotation;
-    }
+    // foreach (var key in placed_markers.Keys)
+    // {
+    //   Vector3 directionToCamera = placed_markers[key].transform.position - Camera.main.transform.position;
+    //   Quaternion lookRotation = Quaternion.LookRotation(directionToCamera, Vector3.up);
+    //   placed_markers[key].transform.rotation = lookRotation;
+    // }
 
-    foreach (var key in placed_markers.Keys)
-    {
-      Vector3 screenPos = Camera.main.WorldToScreenPoint(placed_markers[key].transform.position);
-      // Debug.Log(screenPos);
-      // Debug.Log(placed_markers[key].transform.GetChild(0).gameObject.GetComponent<TextMeshPro>().text);
-      GameObject arrowObject;
+    // foreach (var key in placed_markers.Keys)
+    // {
+    //   Vector3 screenPos = Camera.main.WorldToScreenPoint(placed_markers[key].transform.position);
+    //   // Debug.Log(screenPos);
+    //   // Debug.Log(placed_markers[key].transform.GetChild(0).gameObject.GetComponent<TextMeshPro>().text);
+    //   GameObject arrowObject;
 
-      if (!objectToArrowMap.ContainsKey(placed_markers[key]))
-      {
-        arrowObject = Instantiate(arrow);
-        // GameObject ttxt = arrowObject.transform.GetChild(0).gameObject;
-        TextMeshProUGUI mText = arrowObject.GetComponentInChildren<TextMeshProUGUI>(); ;
-        mText.text = placed_markers[key].transform.GetChild(0).gameObject.GetComponent<TextMeshPro>().text;
-        // arrowObject.transform.GetChild(0).gameObject.GetComponent<TextMeshPro>().text = placed_markers[key].transform.GetChild(0).gameObject.GetComponent<TextMeshPro>().text;
-        arrowObject.transform.SetParent(canvas2.transform);
-        objectToArrowMap[placed_markers[key]] = arrowObject;
-      }
-      else
-      {
-        arrowObject = objectToArrowMap[placed_markers[key]];
-      }
-      // Show indicators for objects that are not visible in the screen
-      if (screenPos.x < 0 || screenPos.x > Screen.width || screenPos.y < 0 || screenPos.y > Screen.height)
-      {
-        arrowObject.SetActive(true);
+    //   if (!objectToArrowMap.ContainsKey(placed_markers[key]))
+    //   {
+    //     arrowObject = Instantiate(arrow);
+    //     // GameObject ttxt = arrowObject.transform.GetChild(0).gameObject;
+    //     TextMeshProUGUI mText = arrowObject.GetComponentInChildren<TextMeshProUGUI>(); ;
+    //     mText.text = placed_markers[key].transform.GetChild(0).gameObject.GetComponent<TextMeshPro>().text;
+    //     // arrowObject.transform.GetChild(0).gameObject.GetComponent<TextMeshPro>().text = placed_markers[key].transform.GetChild(0).gameObject.GetComponent<TextMeshPro>().text;
+    //     arrowObject.transform.SetParent(canvas2.transform);
+    //     objectToArrowMap[placed_markers[key]] = arrowObject;
+    //   }
+    //   else
+    //   {
+    //     arrowObject = objectToArrowMap[placed_markers[key]];
+    //   }
+    //   // Show indicators for objects that are not visible in the screen
+    //   if (screenPos.x < 0 || screenPos.x > Screen.width || screenPos.y < 0 || screenPos.y > Screen.height)
+    //   {
+    //     arrowObject.SetActive(true);
 
-        Vector2 canvasSize = canvas2.GetComponent<RectTransform>().sizeDelta;
-        Vector2 canvasPosition = new Vector2(screenPos.x / Screen.width * canvasSize.x, screenPos.y / Screen.height * canvasSize.y) - canvasSize * 0.5f;
+    //     Vector2 canvasSize = canvas2.GetComponent<RectTransform>().sizeDelta;
+    //     Vector2 canvasPosition = new Vector2(screenPos.x / Screen.width * canvasSize.x, screenPos.y / Screen.height * canvasSize.y) - canvasSize * 0.5f;
 
-        Vector3 screenCenter = new Vector3(Screen.width * 0.5f, Screen.height * 0.5f, screenPos.z);
-        Vector3 direction = screenPos - screenCenter;
-        direction.Normalize();
+    //     Vector3 screenCenter = new Vector3(Screen.width * 0.5f, Screen.height * 0.5f, screenPos.z);
+    //     Vector3 direction = screenPos - screenCenter;
+    //     direction.Normalize();
 
-        float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
-        arrowObject.transform.rotation = Quaternion.Euler(0, 0, angle - 90);
+    //     float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
+    //     arrowObject.transform.rotation = Quaternion.Euler(0, 0, angle - 90);
 
-        float clampBorder = 100.0f; // Adjust this value to set how far inside the screen's edge the marker appears
-        canvasPosition = new Vector2(
-            Mathf.Clamp(canvasPosition.x, -canvasSize.x * 0.5f + clampBorder, canvasSize.x * 0.5f - clampBorder),
-            Mathf.Clamp(canvasPosition.y, -canvasSize.y * 0.5f + clampBorder, canvasSize.y * 0.5f - clampBorder)
-        );
+    //     float clampBorder = 100.0f; // Adjust this value to set how far inside the screen's edge the marker appears
+    //     canvasPosition = new Vector2(
+    //         Mathf.Clamp(canvasPosition.x, -canvasSize.x * 0.5f + clampBorder, canvasSize.x * 0.5f - clampBorder),
+    //         Mathf.Clamp(canvasPosition.y, -canvasSize.y * 0.5f + clampBorder, canvasSize.y * 0.5f - clampBorder)
+    //     );
 
-        arrowObject.transform.localPosition = canvasPosition;
-        if (!animationRunningMap.ContainsKey(arrowObject) || !animationRunningMap[arrowObject])
-        {
-          StartCoroutine(AnimateArrow(arrowObject.transform, animationDuration, waitDuration));
-          animationRunningMap[arrowObject] = true;
-        }
-      }
-      else
-      {
-        arrowObject.SetActive(false);
-        if (animationRunningMap.ContainsKey(arrowObject) && animationRunningMap[arrowObject])
-        {
-          StopCoroutine(AnimateArrow(arrowObject.transform, animationDuration, waitDuration));
-          animationRunningMap[arrowObject] = false;
-        }
-        Debug.Log("Visibleee");
-      }
-    }
+    //     arrowObject.transform.localPosition = canvasPosition;
+    //     if (!animationRunningMap.ContainsKey(arrowObject) || !animationRunningMap[arrowObject])
+    //     {
+    //       StartCoroutine(AnimateArrow(arrowObject.transform, animationDuration, waitDuration));
+    //       animationRunningMap[arrowObject] = true;
+    //     }
+    //   }
+    //   else
+    //   {
+    //     arrowObject.SetActive(false);
+    //     if (animationRunningMap.ContainsKey(arrowObject) && animationRunningMap[arrowObject])
+    //     {
+    //       StopCoroutine(AnimateArrow(arrowObject.transform, animationDuration, waitDuration));
+    //       animationRunningMap[arrowObject] = false;
+    //     }
+    //     Debug.Log("Visibleee");
+    //   }
+    // }
 
     Vector3 tempCamDirec = OSPerson.transform.position - Camera.main.transform.position;
     Quaternion tempRotn = Quaternion.LookRotation(tempCamDirec, Vector3.up);
@@ -846,8 +870,8 @@ public class VideoRend : MonoBehaviour
             obj = "2";
             ctr = BlueCount.ToString();
           }
-
-          string result = IndF.PayloadPrep(mousePos.x.ToString(), mouse_y.ToString(), lat.ToString(), lon.ToString(), alt.ToString(), obj, ctr, "");
+          Debug.Log($"{mousePos.x.ToString()}, {mouse_y.ToString()}, {lat.ToString()}, {lon.ToString()}, {alt.ToString()}, {obj}, {ctr} ");
+          string result = PayloadPrep(mousePos.x.ToString(), mouse_y.ToString(), lat.ToString(), lon.ToString(), alt.ToString(), obj, ctr, "");
 
           Debug.Log(result);
           byte[] data = Encoding.UTF8.GetBytes(result);
@@ -858,6 +882,23 @@ public class VideoRend : MonoBehaviour
     }
 
   }
+
+  public string PayloadPrep(string xpos, string ypos, string lat, string lon, string alt, string obj, string ctr, string track)
+    {
+        Dictionary<string, string> payload = new Dictionary<string, string>();
+        payload.Add("xpos", xpos);
+        payload.Add("ypos", ypos);
+        payload.Add("lat", lat);
+        payload.Add("alt", alt);
+        payload.Add("lon", lon);
+        payload.Add("resh", canv.GetComponent<RectTransform>().rect.height.ToString());
+        payload.Add("resw", canv.GetComponent<RectTransform>().rect.width.ToString());
+        payload.Add("track", track);
+        payload.Add("obj", obj);
+        payload.Add("ctr", ctr);
+        string result = string.Join(",", payload.Select(x => '"' + x.Key + '"' + ": " + '"' + x.Value + '"'));
+        return result;
+    }
 
   private void ScaleObjects(float scale)
   {
