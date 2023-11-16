@@ -91,6 +91,9 @@ public class VideoRend : MonoBehaviour
   public Button green;
   public Button blue;
   public Button red;
+
+  public Button hover;
+  public Button resume;
   public SpeechRecognizer speechRecognizer;
 
   public GameObject tracker;
@@ -139,7 +142,10 @@ public class VideoRend : MonoBehaviour
     green.onClick.AddListener(GreenButton);
     blue.onClick.AddListener(BlueButton);
     red.onClick.AddListener(RedButton);
+    hover.onClick.AddListener(HoverButton);
+    resume.onClick.AddListener(ResumeButton);
     blue.gameObject.SetActive(false);
+    resume.gameObject.SetActive(false);
     curgrid = 1;
     BlueCount = 0;
     GreenCount = 0;
@@ -894,6 +900,32 @@ public class VideoRend : MonoBehaviour
     selectedButton = "blue";
     resetButtons();
     blue.interactable = false;
+  }
+
+  public void HoverButton()
+  {
+    Debug.Log("You have clicked Hover Button!");
+    hover.gameObject.SetActive(false);
+    resume.gameObject.SetActive(true);
+
+    Dictionary<string, string> payload = new Dictionary<string, string>();
+    payload.Add("hover", true.ToString());
+    string result = string.Join(",", payload.Select(x => '"' + x.Key + '"' + ": " + '"' + x.Value + '"'));
+    byte[] data = Encoding.UTF8.GetBytes(result);
+    client.Send(data, data.Length, endPoint);
+  }
+
+  public void ResumeButton()
+  {
+    Debug.Log("You have clicked Resume Button!");
+    hover.gameObject.SetActive(true);
+    resume.gameObject.SetActive(false);
+
+    Dictionary<string, string> payload = new Dictionary<string, string>();
+    payload.Add("hover", false.ToString());
+    string result = string.Join(",", payload.Select(x => '"' + x.Key + '"' + ": " + '"' + x.Value + '"'));
+    byte[] data = Encoding.UTF8.GetBytes(result);
+    client.Send(data, data.Length, endPoint);
   }
 
   // Placing object based on user voice input.
