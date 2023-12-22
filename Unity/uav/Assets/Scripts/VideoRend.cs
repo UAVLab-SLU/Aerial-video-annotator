@@ -140,6 +140,8 @@ public class VideoRend : MonoBehaviour
     blue.onClick.AddListener(BlueButton);
     red.onClick.AddListener(RedButton);
     blue.gameObject.SetActive(false);
+    green.gameObject.SetActive(false);
+    red.gameObject.SetActive(false);
     curgrid = 1;
     BlueCount = 0;
     GreenCount = 0;
@@ -599,7 +601,7 @@ public class VideoRend : MonoBehaviour
       x = (float)Convert.ToDouble(values["x"]);
       y = (float)Convert.ToDouble(values["y"]);
       z = (float)Convert.ToDouble(values["z"]);
-
+      Debug.Log($"{lat} originnnnnnnnn {lon}");
       // converting drone postion in GPS to unity coordinates.
       var world_pos = GPSEncoder.GPSToUCS(lat, lon);
       world_pos.y = alt;
@@ -627,8 +629,8 @@ public class VideoRend : MonoBehaviour
         Vector3 osang = new Vector3();
         osang.x = 90;
         OSPerson = Instantiate(OSPerson, ostemp, Quaternion.Euler(osang));
-        StartCoroutine(GetLocations());
-        StartCoroutine(GetNextMove());
+        // StartCoroutine(GetLocations());
+        // StartCoroutine(GetNextMove());
       }
 
       // Checks to validate data before manipulating gameobjects in Unity.
@@ -670,20 +672,7 @@ public class VideoRend : MonoBehaviour
         drone.transform.position = world_pos;
       }
 
-      GenerateDetectionBoxes(values["bbox_data"]);
-      GenerateTrackerBoxes(values["tracker"]);
-      pathMrkTrgr += Time.deltaTime;
-      Debug.Log("ooooooooooooooooooooooooooooooooooooooo");
-      // Check if it's time to call the function.
-      if (pathMrkTrgr >= pathMrkIntr)
-      {
-        PathMarker(values["tracker_status"], values["tracker"]);
-
-        // Reset the time elapsed.
-        pathMrkTrgr = 0f;
-      }
-
-
+  
     }
 
     // foreach (var key in placed_markers.Keys)
@@ -761,6 +750,7 @@ public class VideoRend : MonoBehaviour
     // Udp connection to get GeoLocation 
     if (client2.Available > 0)
     {
+      Debug.Log("ppppppppppppppppppp");
       byte[] data2 = client2.Receive(ref endPoint);
       string text2 = Encoding.UTF8.GetString(data2);
       var values2 = JsonConvert.DeserializeObject<Dictionary<string, string>>(text2);
@@ -771,6 +761,7 @@ public class VideoRend : MonoBehaviour
       world_pos2.y = 1.0f;
       world_pos2.x = 1.0f * world_pos2.x;
       world_pos2.z = 1.0f * world_pos2.z;
+      Debug.Log($"{lat2} andddddddddddddd{lon2}");
       Debug.Log(world_pos2);
       InstObj(world_pos2, values2["obj"]);
 
@@ -783,13 +774,13 @@ public class VideoRend : MonoBehaviour
 
 
 
-      Dictionary<string, double> pl = new Dictionary<string, double>();
-      var tempVal = JsonConvert.SerializeObject(lpl);
-      // Creating a new entry for location in Firebase database.
-      RestClient.Post<Location>("https://uavlab-98a0c-default-rtdb.firebaseio.com/location.json", tempVal).Then(response =>
-      {
-        Debug.Log(response);
-      });
+      // Dictionary<string, double> pl = new Dictionary<string, double>();
+      // var tempVal = JsonConvert.SerializeObject(lpl);
+      // // Creating a new entry for location in Firebase database.
+      // RestClient.Post<Location>("https://uavlab-98a0c-default-rtdb.firebaseio.com/location.json", tempVal).Then(response =>
+      // {
+      //   Debug.Log(response);
+      // });
       // }
 
 
@@ -1009,7 +1000,7 @@ public class VideoRend : MonoBehaviour
     }
     if (oj == "1" || oj == "0")
     {
-      var gob = Instantiate(tp, wp, Quaternion.Euler(ang));
+      var gob = Instantiate(pathMrkr, wp, Quaternion.Euler(ang));
       GameObject ttxt = gob.transform.GetChild(0).gameObject;
       TextMeshPro mText = ttxt.GetComponent<TextMeshPro>();
       mText.text = mclr + " " + ctr;
