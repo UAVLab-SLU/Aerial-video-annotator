@@ -758,7 +758,7 @@ public class VideoRend : MonoBehaviour
       lon2 = (float)Convert.ToDouble(values2["lon"]);
       alt2 = (float)Convert.ToDouble(values2["alt"]);
       var world_pos2 = GPSEncoder.GPSToUCS(lat2, lon2);
-      world_pos2.y = 1.0f;
+      world_pos2.y = 0.0f;
       world_pos2.x = 1.0f * world_pos2.x;
       world_pos2.z = 1.0f * world_pos2.z;
       Debug.Log($"{lat2} andddddddddddddd{lon2}");
