@@ -22,8 +22,17 @@ public class VideoRend : MonoBehaviour
   public Canvas canv;
   public RawImage image;
 
+  public GameObject drone2;
+  public GameObject drone3;
+  public GameObject drone4;
+  public RawImage image2;
+  public RawImage image3;
+  public RawImage image4;
   public Canvas canvas2;
+  public Camera camera2;
 
+  public Camera camera3;
+  public Camera camera4;
   public GameObject OSPerson;
   public GameObject drone;
   public GameObject obj1;
@@ -47,8 +56,16 @@ public class VideoRend : MonoBehaviour
   UdpClient client;
   UdpClient client2;
   UdpClient client3;
+  UdpClient client4;
+  UdpClient client5;
+
+  UdpClient client6;
   IPEndPoint endPoint;
   IPEndPoint endPoint2;
+  IPEndPoint endPoint4;
+  IPEndPoint endPoint5;
+
+  IPEndPoint endPoint6;
 
   private IndependentFun IndF;
   private TextProcessor textProcessor;
@@ -134,8 +151,14 @@ public class VideoRend : MonoBehaviour
     client = new UdpClient(8080);
     client2 = new UdpClient(8000);
     client3 = new UdpClient(8005);
+    client4 = new UdpClient(8010);
+    client5 = new UdpClient(8012);
+    client6 = new UdpClient(8014);
     endPoint = new IPEndPoint(IPAddress.Any, 8001);
     endPoint2 = new IPEndPoint(IPAddress.Any, 8002);
+    endPoint4 = new IPEndPoint(IPAddress.Any, 8010);
+    endPoint5 = new IPEndPoint(IPAddress.Any, 8012);
+    endPoint6 = new IPEndPoint(IPAddress.Any, 8014);
     green.onClick.AddListener(GreenButton);
     blue.onClick.AddListener(BlueButton);
     red.onClick.AddListener(RedButton);
@@ -149,13 +172,12 @@ public class VideoRend : MonoBehaviour
     SetGrid();
     OSnextMove = "";
     grid.gameObject.SetActive(false);
-    circleMarker = Instantiate(circle, new Vector3(0, -200, 0), Quaternion.identity);
-
+    // circleMarker = Instantiate(circle, new Vector3(0, -200, 0), Quaternion.identity);
+    canvas2.gameObject.SetActive(false);
     selectedButton = "";
     // green.interactable = false;
     Po = true;
     fetchedLocations = false;
-
     //---------Speech Recognition setup.
     speechRecognizer = gameObject.AddComponent<SpeechRecognizer>();
     var languageModelProvider = gameObject.AddComponent<StreamingAssetsLanguageModelProvider>();
@@ -656,7 +678,7 @@ public class VideoRend : MonoBehaviour
         {
           ht = -1.0f * ht;
         }
-        canv.planeDistance = 20;
+        canv.planeDistance = ht;
       }
       //Converting Quaternion from NED to ENU.
       rotat = new Quaternion(-y, z, -x, w);
@@ -809,6 +831,185 @@ public class VideoRend : MonoBehaviour
       string result = IndF.PayloadPrep(pathXpos.ToString(), pathYpos.ToString(), lat.ToString(), lon.ToString(), alt.ToString(), obj, "0", "");
       // Debug.Log(result);
       SendData(result);
+
+    }
+
+    if (client4.Available > 0){
+      byte[] data4 = client4.Receive(ref endPoint4);
+      string text4 = Encoding.UTF8.GetString(data4);
+      var values4 = JsonConvert.DeserializeObject<Dictionary<string, string>>(text4);
+
+      var lat4 = (float)Convert.ToDouble(values4["lat"]);
+      var lon4 = (float)Convert.ToDouble(values4["lon"]);
+      var alt4 = (float)Convert.ToDouble(values4["alt"]);
+
+      var w = (float)Convert.ToDouble(values4["w"]);
+      var x = (float)Convert.ToDouble(values4["x"]);
+      var y = (float)Convert.ToDouble(values4["y"]);
+      var z = (float)Convert.ToDouble(values4["z"]);
+  
+      // converting drone postion in GPS to unity coordinates.
+      var world_pos4 = GPSEncoder.GPSToUCS(lat4, lon4);
+      world_pos4.y = alt4;
+      if (Po)
+      {
+        GPSEncoder.SetLocalOrigin(new Vector2(lat4, lon4));
+        var world_p = GPSEncoder.GPSToUCS(lat4, lon4);
+        // InstObj(world_p); // Mark drones takeoff location.
+        Debug.Log("Object placed");
+        Po = false;
+      }
+      var pitch = (float)Convert.ToDouble(values4["pitch"]);
+      var roll = (float)Convert.ToDouble(values4["roll"]);
+      var yaw = (float)Convert.ToDouble(values4["yaw"]);
+      // Setting up rawImage with the frame received from drone.(Simuating ground in unity by projecting this in clipping plane of main camera)
+      if (values4["image"] != null)
+      {
+        byte[] result = Convert.FromBase64String(values4["image"]);
+        Texture2D texture = new Texture2D(2, 2);
+        texture.LoadImage(result);
+        image2.texture = texture;
+      }
+
+      // Checks to validate data before manipulating gameobjects in Unity.
+      if (!float.IsNaN(pitch) && !float.IsNaN(roll) && !float.IsNaN(yaw))
+      {
+        ang.x = -1.0f * pitch;
+        ang.y = yaw;
+        ang.z = roll;
+        float tempv = (float)Math.PI / 180;
+        if (ang.x > 90.0f)
+        {
+          ang.x = ang.x % 90.0f;
+        }
+        if (ang.x < 0.0f)
+        {
+          ang.x = ang.x * -1.0f;
+        }
+        // Projecting ground at hypotenuse of Drone height from ground and pitch of drone to simulate real world movement.
+        float c = (90.0f - ang.x) * tempv;
+        float tempang = (float)Math.Cos(c);
+        float ht = alt / tempang;
+        if (ht < 0.0f)
+        {
+          ht = -1.0f * ht;
+        }
+        canv.planeDistance = ht;
+      }
+      //Converting Quaternion from NED to ENU.
+      var rotat = new Quaternion(-y, z, -x, w);
+      // Validating data
+      if (!float.IsNaN(rotat.x) && !float.IsNaN(rotat.y) && !float.IsNaN(rotat.z) && !float.IsNaN(rotat.w))
+      {
+        drone2.transform.rotation = rotat;
+      }
+
+
+      if (!float.IsNaN(world_pos4.x) && !float.IsNaN(world_pos4.y) && !float.IsNaN(world_pos4.z))
+      {
+        drone2.transform.position = world_pos4;
+      }
+
+    }
+
+
+    if (client5.Available > 0){
+      byte[] data5 = client5.Receive(ref endPoint5);
+      string text5 = Encoding.UTF8.GetString(data5);
+      var values5 = JsonConvert.DeserializeObject<Dictionary<string, string>>(text5);
+
+      var lat5 = (float)Convert.ToDouble(values5["lat"]);
+      var lon5 = (float)Convert.ToDouble(values5["lon"]);
+      var alt5 = (float)Convert.ToDouble(values5["alt"]);
+
+      var w5 = (float)Convert.ToDouble(values5["w"]);
+      var x5 = (float)Convert.ToDouble(values5["x"]);
+      var y5 = (float)Convert.ToDouble(values5["y"]);
+      var z5 = (float)Convert.ToDouble(values5["z"]);
+  
+      // converting drone postion in GPS to unity coordinates.
+      var world_pos5 = GPSEncoder.GPSToUCS(lat5, lon5);
+      world_pos5.y = alt5;
+      if (Po)
+      {
+        GPSEncoder.SetLocalOrigin(new Vector2(lat5, lon5));
+        var world_p = GPSEncoder.GPSToUCS(lat5, lon5);
+        // InstObj(world_p); // Mark drones takeoff location.
+        Debug.Log("Object placed");
+        Po = false;
+      }
+      {
+        byte[] result = Convert.FromBase64String(values5["image"]);
+        Texture2D texture = new Texture2D(2, 2);
+        texture.LoadImage(result);
+        image3.texture = texture;
+      }
+
+      //Converting Quaternion from NED to ENU.
+      var rotat = new Quaternion(-y5, z5, -x5, w5);
+      // Validating data
+      if (!float.IsNaN(rotat.x) && !float.IsNaN(rotat.y) && !float.IsNaN(rotat.z) && !float.IsNaN(rotat.w))
+      {
+        drone3.transform.rotation = rotat;
+      }
+
+
+      if (!float.IsNaN(world_pos5.x) && !float.IsNaN(world_pos5.y) && !float.IsNaN(world_pos5.z))
+      {
+        drone3.transform.position = world_pos5;
+      }
+
+    }
+
+    if (client6.Available > 0){
+      byte[] data6 = client6.Receive(ref endPoint6);
+      string text6 = Encoding.UTF8.GetString(data6);
+      var values6 = JsonConvert.DeserializeObject<Dictionary<string, string>>(text6);
+
+      var lat6 = (float)Convert.ToDouble(values6["lat"]);
+      var lon6 = (float)Convert.ToDouble(values6["lon"]);
+      var alt6 = (float)Convert.ToDouble(values6["alt"]);
+
+      var w6 = (float)Convert.ToDouble(values6["w"]);
+      var x6 = (float)Convert.ToDouble(values6["x"]);
+      var y6 = (float)Convert.ToDouble(values6["y"]);
+      var z6 = (float)Convert.ToDouble(values6["z"]);
+  
+      // converting drone postion in GPS to unity coordinates.
+      var world_pos6 = GPSEncoder.GPSToUCS(lat6, lon6);
+      world_pos6.y = alt6;
+      if (Po)
+      {
+        GPSEncoder.SetLocalOrigin(new Vector2(lat6, lon6));
+        var world_p = GPSEncoder.GPSToUCS(lat6, lon6);
+        // InstObj(world_p); // Mark drones takeoff location.
+        Debug.Log("Object placed");
+        Po = false;
+      }
+     
+      // Setting up rawImage with the frame received from drone.(Simuating ground in unity by projecting this in clipping plane of main camera)
+      if (values6["image"] != null)
+      {
+        byte[] result = Convert.FromBase64String(values6["image"]);
+        Texture2D texture = new Texture2D(2, 2);
+        texture.LoadImage(result);
+        image4.texture = texture;
+      }
+
+     
+      //Converting Quaternion from NED to ENU.
+      var rotat = new Quaternion(-y6, z6, -x6, w6);
+      // Validating data
+      if (!float.IsNaN(rotat.x) && !float.IsNaN(rotat.y) && !float.IsNaN(rotat.z) && !float.IsNaN(rotat.w))
+      {
+        drone4.transform.rotation = rotat;
+      }
+
+
+      if (!float.IsNaN(world_pos6.x) && !float.IsNaN(world_pos6.y) && !float.IsNaN(world_pos6.z))
+      {
+        drone4.transform.position = world_pos6;
+      }
 
     }
 
