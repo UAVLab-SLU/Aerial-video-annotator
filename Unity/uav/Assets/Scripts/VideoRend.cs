@@ -15,7 +15,6 @@ using System.Collections;
 using UnityEngine.Networking;
 using Proyecto26;
 
-
 public class VideoRend : MonoBehaviour
 {
   // Start is called before the first frame update
@@ -52,22 +51,19 @@ public class VideoRend : MonoBehaviour
 
   public IndependentFun IndF;
   public TextProcessor textProcessor;
+  public DetectionAndTracking detectTrack;
+  public OSOupdates OSOupdate;
   public int curgrid;
 
-  private Dictionary<string, GameObject> placed_markers = new Dictionary<string, GameObject>();
+  public Dictionary<string, GameObject> placed_markers = new Dictionary<string, GameObject>();
 
-  private Dictionary<GameObject, string> tracker_boxes = new Dictionary<GameObject, string>();
-
+  public Dictionary<GameObject, string> tracker_boxes = new Dictionary<GameObject, string>();
 
   private Dictionary<GameObject, GameObject> objectToArrowMap = new Dictionary<GameObject, GameObject>();
 
   private Dictionary<GameObject, bool> animationRunningMap = new Dictionary<GameObject, bool>();
 
-
-
-  Dictionary<string, Location> locations;
-
-  TextMeshProUGUI dg;
+  public TextMeshProUGUI dg;
 
   public TextMeshProUGUI nextMv;
   float lat = 0.0f;
@@ -97,24 +93,23 @@ public class VideoRend : MonoBehaviour
 
   public GameObject detect;
 
-  private int GreenCount;
+  public int GreenCount;
 
-  private int BlueCount;
+  public int BlueCount;
 
-  private int RedCount;
+  public int RedCount;
 
-  private string OSnextMove;
+  public string OSnextMove;
 
-  bool Po;
+  public bool Po;
 
-  bool fetchedLocations;
+  public bool fetchedLocations;
 
-  // string microPhn = Microphone.devices[0];
   public GameObject dialogue;
 
   public GameObject nextMvNotif;
 
-  private GameObject circleMarker;
+  public GameObject circleMarker;
 
 
   public List<GameObject> trackerList = new List<GameObject>();
@@ -131,6 +126,10 @@ public class VideoRend : MonoBehaviour
 
   void Start()
   {
+    IndF = FindObjectOfType<IndependentFun>();
+    textProcessor = FindObjectOfType<TextProcessor>();
+    OSOupdate = FindObjectOfType<OSOupdates>();
+    detectTrack = FindObjectOfType<DetectionAndTracking>();
     client = new UdpClient(8080);
     client2 = new UdpClient(8000);
     client3 = new UdpClient(8005);
@@ -188,280 +187,12 @@ public class VideoRend : MonoBehaviour
             "victim", "gun"
         };
     // startRecord();
-    StartCoroutine(GetOSLocation());
+    StartCoroutine(OSOupdate.GetOSLocation());
     // StartCoroutine(GetNextMove());
-    IndF = FindObjectOfType<IndependentFun>();
-    textProcessor = FindObjectOfType<TextProcessor>();
-
-
-  }
-
-  // Get Onsite Operator Next Move.
-  IEnumerator GetNextMove()
-  {
-    while (true)
-    {
-
-      if (!Po)
-      {
-        if (fetchedLocations)
-        {
-          using (UnityWebRequest webRequest = UnityWebRequest.Get("https://uavlab-98a0c-default-rtdb.firebaseio.com/nextMove.json"))
-          {
-            // Request and wait for the desired page.
-            yield return webRequest.SendWebRequest();
-            if (webRequest.result == UnityWebRequest.Result.ConnectionError)
-            {
-              Debug.Log(": Error: " + webRequest.error);
-            }
-            else
-            {
-
-              foreach (var key in placed_markers.Keys)
-              {
-                // Debug.Log($"----------{key}");
-              }
-              // Debug.Log($"{webRequest.downloadHandler.text}------");
-              var values = JsonConvert.DeserializeObject<Dictionary<string, int>>(webRequest.downloadHandler.text);
-              var tempNextMove = values["color"].ToString() + values["num"].ToString();
-              if (placed_markers.ContainsKey(tempNextMove))
-              {
-                var tempGobj = placed_markers[tempNextMove];
-
-                string color = "";
-                if (values["color"] == 0)
-                {
-                  color = "Gun";
-                }
-                if (values["color"] == 1)
-                {
-                  color = "Victim";
-                }
-                if (values["color"] == 2)
-                {
-                  color = "Blue";
-                }
-                if (tempNextMove != OSnextMove)
-                {
-                  Debug.Log($"NextMove changed");
-                  var dobj = Instantiate(nextMvNotif);
-                  dg = dobj.GetComponentInChildren<TextMeshProUGUI>();
-                  dg.text = "OnSite Operator next move changed to " + color + " " + values["num"].ToString();
-                  circleMarker.transform.position = tempGobj.transform.position;
-                  circleMarker.transform.rotation = tempGobj.transform.rotation;
-                  Destroy(dobj, 3);
-                  OSnextMove = tempNextMove;
-                }
-                float distance = 0f;
-                distance = Vector3.Distance(tempGobj.transform.position, OSPerson.transform.position);
-                // dist.text = "Onsite Operator is " + distance + " from target";
-                nextMv.text = "Onsite Operator next Move: " + color + " " + values["num"].ToString() + " and is " + distance + "m from target";
-              }
-            }
-          }
-        }
-      }
-      yield return new WaitForSeconds(1);
-    }
-
-  }
-
-  // Get Onsite operator and update it every second.
-  IEnumerator GetOSLocation()
-  {
-    while (true)
-    {
-
-      if (!Po)
-      {
-
-        using (UnityWebRequest webRequest = UnityWebRequest.Get("https://uavlab-98a0c-default-rtdb.firebaseio.com/OSlocation.json"))
-        {
-          // Request and wait for the desired page.
-          yield return webRequest.SendWebRequest();
-          if (webRequest.result == UnityWebRequest.Result.ConnectionError)
-          {
-            Debug.Log(": Error: " + webRequest.error);
-          }
-          else
-          {
-
-            OSLocation osl = JsonConvert.DeserializeObject<OSLocation>(webRequest.downloadHandler.text);
-            var os_pos = GPSEncoder.GPSToUCS((float)osl.lat, (float)osl.lon);
-            os_pos.y = 0f;
-            OSPerson.transform.position = os_pos;
-
-          }
-        }
-      }
-      yield return new WaitForSeconds(1);
-    }
-
-  }
-
-  // Get already placed locations from Firebase database.
-  IEnumerator GetLocations()
-  {
-
-    if (!Po)
-    {
-      using (UnityWebRequest webRequest = UnityWebRequest.Get("https://uavlab-98a0c-default-rtdb.firebaseio.com/location.json"))
-      {
-        yield return webRequest.SendWebRequest();
-        if (webRequest.result == UnityWebRequest.Result.ConnectionError)
-        {
-          // Debug.Log(": Error: " + webRequest.error);
-        }
-        else
-        {
-          locations = JsonConvert.DeserializeObject<Dictionary<string, Location>>(webRequest.downloadHandler.text);
-          string color = "";
-          string num = "";
-          GameObject tempG = obj1;
-          // Creating respective markers for fetched locations and updating marker(Example, Green 1 to Green 4) count.
-          if (locations != null)
-          {
-            foreach (var key in locations.Keys)
-            {
-              num = locations[key].ctr.ToString();
-              if (locations[key].obj == 0)
-              {
-                tempG = obj2;
-                color = "Gun";
-                if (locations[key].ctr > RedCount)
-                {
-                  RedCount = locations[key].ctr;
-                  // RedCount += 1;
-                }
-              }
-              if (locations[key].obj == 1)
-              {
-                tempG = obj1;
-                color = "Victim";
-                if (locations[key].ctr > GreenCount)
-                {
-                  GreenCount = locations[key].ctr;
-                  // GreenCount += 1;
-                }
-              }
-              if (locations[key].obj == 2)
-              {
-                tempG = obj3;
-                color = "Blue";
-                if (locations[key].ctr > BlueCount)
-                {
-                  BlueCount = locations[key].ctr;
-                  // BlueCount += 1;
-                }
-              }
-              var pos = GPSEncoder.GPSToUCS((float)locations[key].lat, (float)locations[key].lon);
-              if (locations[key].obj == 0 || locations[key].obj == 1)
-              {
-
-                var gob = Instantiate(tempG, pos, Quaternion.Euler(0, 0, 0));
-                GameObject ttxt = gob.transform.GetChild(0).gameObject;
-                TextMeshPro mText = ttxt.GetComponent<TextMeshPro>();
-                mText.text = color + " " + num;
-                string tempKey = locations[key].obj.ToString() + locations[key].ctr.ToString();
-                placed_markers[tempKey] = gob;
-
-              }
-              if (locations[key].obj == 5)
-              {
-                pos.y = 0f;
-                Instantiate(pathMrkr, pos, Quaternion.Euler(new Vector3(90, 0, 0)));
-              }
-              else if (locations[key].obj == 6)
-              {
-                pos.y = 0f;
-                Instantiate(pathStart, pos, Quaternion.Euler(new Vector3(90, 0, 0)));
-              }
-              else if (locations[key].obj == 7)
-              {
-                pos.y = 0f;
-                Instantiate(pathEnd, pos, Quaternion.Euler(new Vector3(90, 0, 0)));
-              }
-
-            }
-
-          }
-
-          fetchedLocations = true;
-        }
-      }
-      Debug.Log($"{RedCount}----,{GreenCount}");
-      RedCount += 1;
-      BlueCount += 1;
-      GreenCount += 1;
-      yield return null;
-    }
-  }
-
-
-  private void GenerateDetectionBoxes(string bbox)
-  {
-    
-    foreach (GameObject obj in trackerList)
-    {
-      Destroy(obj);
-    }
-    trackerList.Clear();
-
-    if (bbox != "")
-    {
-      string[] boxes = bbox.Split('n');
-      foreach (string box in boxes)
-      {
-        string[] crds = box.Split('.');
-        var trkpos = IndF.ConvertBboxToUnityUI(crds, 720f, 1280f, 1080f, 1920f);
-        var trcpos = new Vector3(trkpos.y, trkpos.x);
-        GameObject t = Instantiate(detect);
-        t.transform.position = trcpos;
-        t.transform.SetParent(canvas2.transform);
-        trackerList.Add(t);
-        tracker_boxes[t] = box;
-      }
-    }
-  }
-
-  private void GenerateTrackerBoxes(string bbox)
-  {
-
-
-    foreach (GameObject obj in trackingList)
-    {
-      Destroy(obj);
-    }
-    trackingList.Clear();
-
-    if (bbox != "")
-    {
-      string[] boxes = bbox.Split('n');
-      foreach (string box in boxes)
-      {
-        string[] crds = box.Split('.');
-
-        var trkpos = IndF.ConvertBboxToUnityUI(crds, 720f, 1280f, 1080f, 1920f);
-        // Debug.Log(trkpos.width);
-        var trcpos = new Vector3(trkpos.y, trkpos.x);
-        // Debug.Log($"Tracker box at{trcpos}");
-        GameObject t = Instantiate(tracker);
-        t.transform.position = trcpos;
-        t.transform.SetParent(canvas2.transform);
-        trackingList.Add(t);
-        // tracker_boxes[t] = box;
-        // Debug.Log($"{x1},{y1},{x2},{y2}");
-
-      }
-    }
   }
 
   private void SendData(string res)
   {
-    string tr = "ooooooooooooooooooooo";
-    byte[] bdata = Encoding.UTF8.GetBytes(tr);
-    client.Send(bdata, bdata.Length, endPoint2);
-    Debug.Log($"{res} iiiiiiiiiiiiiiiiiiiii");
     byte[] data = Encoding.UTF8.GetBytes(res);
     client.Send(data, data.Length, endPoint2);
   }
@@ -520,12 +251,8 @@ public class VideoRend : MonoBehaviour
         elapsedTime += Time.deltaTime;
         yield return null;
       }
-
       arrowTransform.localPosition = forwardPos;
-
       yield return new WaitForSeconds(waitTime);
-
-
       elapsedTime = 0;
       while (elapsedTime < moveDuration)
       {
@@ -533,9 +260,7 @@ public class VideoRend : MonoBehaviour
         elapsedTime += Time.deltaTime;
         yield return null;
       }
-
       arrowTransform.localPosition = backwardPos;
-
       yield return new WaitForSeconds(waitTime);
     }
   }
@@ -554,7 +279,6 @@ public class VideoRend : MonoBehaviour
       lat = (float)Convert.ToDouble(values["lat"]);
       lon = (float)Convert.ToDouble(values["lon"]);
       alt = (float)Convert.ToDouble(values["alt"]);
-
 
       if (alt - checkalt > 10.0f)
       {
@@ -605,8 +329,8 @@ public class VideoRend : MonoBehaviour
         Vector3 osang = new Vector3();
         osang.x = 90;
         OSPerson = Instantiate(OSPerson, ostemp, Quaternion.Euler(osang));
-        StartCoroutine(GetLocations());
-        StartCoroutine(GetNextMove());
+        StartCoroutine(OSOupdate.GetLocations());
+        StartCoroutine(OSOupdate.GetNextMove());
       }
 
       // Checks to validate data before manipulating gameobjects in Unity.
@@ -648,15 +372,14 @@ public class VideoRend : MonoBehaviour
         drone.transform.position = world_pos;
       }
 
-      GenerateDetectionBoxes(values["bbox_data"]);
-      GenerateTrackerBoxes(values["tracker"]);
+      detectTrack.GenerateDetectionBoxes(values["bbox_data"]);
+      detectTrack.GenerateTrackerBoxes(values["tracker"]);
       pathMrkTrgr += Time.deltaTime;
       Debug.Log("ooooooooooooooooooooooooooooooooooooooo");
       // Check if it's time to call the function.
       if (pathMrkTrgr >= pathMrkIntr)
       {
         PathMarker(values["tracker_status"], values["tracker"]);
-
         // Reset the time elapsed.
         pathMrkTrgr = 0f;
       }
@@ -825,11 +548,8 @@ public class VideoRend : MonoBehaviour
       Vector3 mousePos = Input.mousePosition;
       if (selectedButton != "")
       {
-
-
         if (resList.Count == 1)
         {
-
           var mouse_y = canv.GetComponent<RectTransform>().rect.height - mousePos.y;
           var obj = "";
           var ctr = "";
@@ -854,7 +574,6 @@ public class VideoRend : MonoBehaviour
           Debug.Log(result);
           byte[] data = Encoding.UTF8.GetBytes(result);
           client.Send(data, data.Length, endPoint);
-
         }
       }
     }
@@ -935,8 +654,6 @@ public class VideoRend : MonoBehaviour
     textProcessor.Processtext(keywords);
   }
 
-
-
   // Creating markers.
   private void InstObj(Vector3 wp, string oj)
   {
@@ -995,7 +712,6 @@ public class VideoRend : MonoBehaviour
       Instantiate(pathEnd, wp, Quaternion.Euler(new Vector3(90, 0, 0)));
     }
 
-
     resetButtons();
     selectedButton = "";
     //GameObject c = Instantiate(circle,wp,Quaternion.Euler(ang));
@@ -1034,6 +750,4 @@ public class VideoRend : MonoBehaviour
         break;
     }
   }
-
-
 }
