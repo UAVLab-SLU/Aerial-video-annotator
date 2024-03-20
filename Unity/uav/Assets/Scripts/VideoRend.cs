@@ -19,6 +19,10 @@ using Proyecto26;
 public class VideoRend : MonoBehaviour
 {
   // Start is called before the first frame update
+  /*
+    prefabs
+  */
+  public GameObject droneView;
   public Canvas canv;
   public RawImage image;
 
@@ -131,6 +135,9 @@ public class VideoRend : MonoBehaviour
 
   void Start()
   {
+
+    GameObject droneView_1 = Instantiate(enemyPrefab)
+
     client = new UdpClient(8080);
     client2 = new UdpClient(8000);
     client3 = new UdpClient(8005);

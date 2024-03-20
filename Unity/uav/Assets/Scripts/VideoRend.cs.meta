@@ -3,7 +3,37 @@ guid: c38ac1ed6730ef4f3ae158a684251b79
 MonoImporter:
   externalObjects: {}
   serializedVersion: 2
-  defaultReferences: []
+  defaultReferences:
+  - droneView: {fileID: 591824557571132625, guid: b50b1c49d9ad89679ba3a634959bc2e4, type: 3}
+  - canv: {instanceID: 0}
+  - image: {instanceID: 0}
+  - canvas2: {instanceID: 0}
+  - OSPerson: {instanceID: 0}
+  - drone: {instanceID: 0}
+  - obj1: {instanceID: 0}
+  - obj2: {instanceID: 0}
+  - obj3: {instanceID: 0}
+  - pathMrkr: {instanceID: 0}
+  - pathStart: {instanceID: 0}
+  - pathEnd: {instanceID: 0}
+  - arrow: {instanceID: 0}
+  - circle: {instanceID: 0}
+  - grid: {instanceID: 0}
+  - grid2: {instanceID: 0}
+  - grid3: {instanceID: 0}
+  - grid4: {instanceID: 0}
+  - grid5: {instanceID: 0}
+  - IndF: {instanceID: 0}
+  - textProcessor: {instanceID: 0}
+  - nextMv: {instanceID: 0}
+  - green: {instanceID: 0}
+  - blue: {instanceID: 0}
+  - red: {instanceID: 0}
+  - speechRecognizer: {instanceID: 0}
+  - tracker: {instanceID: 0}
+  - detect: {instanceID: 0}
+  - dialogue: {instanceID: 0}
+  - nextMvNotif: {instanceID: 0}
   executionOrder: 0
   icon: {instanceID: 0}
   userData: 
