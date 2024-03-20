@@ -17,9 +17,9 @@ using Proyecto26;
 
 public class VideoRend : MonoBehaviour
 {
-  // Start is called before the first frame update
-  public Canvas canv;
-  public RawImage image;
+// Start is called before the first frame update
+    private Canvas canv;
+    public RawImage image;
 
   public Canvas canvas2;
 
@@ -124,25 +124,37 @@ public class VideoRend : MonoBehaviour
 
   public float waitDuration = 0.2f;
 
-  void Start()
+    public Canvas Canv { get => canv; set => canv = value; }
+
+    void Start()
   {
+    /* 
+      fetchs refrence to and initializes corresponding IndependentFun, TextProcessor, OSOupdates 
+      and DectectionAndTracking objects from active game objects.
+    */
     IndF = FindObjectOfType<IndependentFun>();
     textProcessor = FindObjectOfType<TextProcessor>();
     OSOupdate = FindObjectOfType<OSOupdates>();
     detectTrack = FindObjectOfType<DetectionAndTracking>();
+
     client = new UdpClient(8080);
     client2 = new UdpClient(8000);
     client3 = new UdpClient(8005);
+
     endPoint = new IPEndPoint(IPAddress.Any, 8001);
     endPoint2 = new IPEndPoint(IPAddress.Any, 8002);
+
     green.onClick.AddListener(GreenButton);
     blue.onClick.AddListener(BlueButton);
     red.onClick.AddListener(RedButton);
+
     blue.gameObject.SetActive(false);
+
     curgrid = 1;
     BlueCount = 0;
     GreenCount = 0;
     RedCount = 0;
+    
     SetGrid();
     OSnextMove = "";
     grid.gameObject.SetActive(false);
@@ -214,7 +226,7 @@ public class VideoRend : MonoBehaviour
             string[] crds = boxes[ctr].Split('.');
             var trkpos = IndF.ConvertBboxToUnityUI(crds, 720f, 1280f, 1080f, 1920f);
             var pathXpos = trkpos.y + trkpos.width / 2.0f;
-            var pathYpos = canv.GetComponent<RectTransform>().rect.height - trkpos.x + trkpos.height / 2.0f;
+            var pathYpos = Canv.GetComponent<RectTransform>().rect.height - trkpos.x + trkpos.height / 2.0f;
             string result = IndF.PayloadPrep(pathXpos.ToString(), pathYpos.ToString(), lat.ToString(), lon.ToString(), alt.ToString(), "5", "0", "");
             // string result = string.Join(",", payload.Select(x => '"' + x.Key + '"' + ": " + '"' + x.Value + '"'));
             Debug.Log(result);
@@ -356,7 +368,7 @@ public class VideoRend : MonoBehaviour
         {
           ht = -1.0f * ht;
         }
-        canv.planeDistance = ht + 1;
+        Canv.planeDistance = ht + 1;
       }
       //Converting Quaternion from NED to ENU.
       rotat = new Quaternion(-y, z, -x, w);
@@ -514,7 +526,7 @@ public class VideoRend : MonoBehaviour
       string[] crds = values3["box"].Split('.');
       var trkpos = IndF.ConvertBboxToUnityUI(crds, 720f, 1280f, 1080f, 1920f);
       var pathXpos = trkpos.y + trkpos.width / 2.0f;
-      var pathYpos = canv.GetComponent<RectTransform>().rect.height - trkpos.x + trkpos.height / 2.0f;
+      var pathYpos = Canv.GetComponent<RectTransform>().rect.height - trkpos.x + trkpos.height / 2.0f;
       Debug.Log($"{pathXpos},{pathYpos} are midPointsssssssssssssssssssssssssssssssssssss");
       string result = IndF.PayloadPrep(pathXpos.ToString(), pathYpos.ToString(), lat.ToString(), lon.ToString(), alt.ToString(), obj, "0", "");
       // Debug.Log(result);
@@ -550,7 +562,7 @@ public class VideoRend : MonoBehaviour
       {
         if (resList.Count == 1)
         {
-          var mouse_y = canv.GetComponent<RectTransform>().rect.height - mousePos.y;
+          var mouse_y = Canv.GetComponent<RectTransform>().rect.height - mousePos.y;
           var obj = "";
           var ctr = "";
           if (selectedButton == "red")

@@ -13,7 +13,7 @@ using System.Collections;
 public class IndependentFun : MonoBehaviour
 {
 
-  private VideoRend videoRend;
+  public VideoRend videoRend;
   public TextProcessor textProcessor;
   void Start()
   {
