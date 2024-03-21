@@ -4,7 +4,7 @@ MonoImporter:
   externalObjects: {}
   serializedVersion: 2
   defaultReferences:
-  - droneView: {fileID: 591824557571132625, guid: b50b1c49d9ad89679ba3a634959bc2e4, type: 3}
+  - droneView: {fileID: 2422835921277714739, guid: d2477b8f516a693879e557e599565d67, type: 3}
   - canv: {instanceID: 0}
   - image: {instanceID: 0}
   - canvas2: {instanceID: 0}

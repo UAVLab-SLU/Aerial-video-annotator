@@ -136,7 +136,10 @@ public class VideoRend : MonoBehaviour
   void Start()
   {
 
-    GameObject droneView_1 = Instantiate(enemyPrefab)
+    // GameObject droneView_1 = Instantiate(droneView);
+    // Camera dv_1_camera = droneView_1.GetComponentInChildren<Camera>();
+    // Canvas dv_1_canvas = droneView_1.GetComponentInChildren<Canvas>();
+    // canv = dv_1_canvas;
 
     client = new UdpClient(8080);
     client2 = new UdpClient(8000);
@@ -739,9 +742,9 @@ public class VideoRend : MonoBehaviour
       }
     }
 
-    Vector3 tempCamDirec = OSPerson.transform.position - Camera.main.transform.position;
-    Quaternion tempRotn = Quaternion.LookRotation(tempCamDirec, Vector3.up);
-    OSPerson.transform.rotation = tempRotn;
+    // Vector3 tempCamDirec = OSPerson.transform.position - Camera.main.transform.position;
+    // Quaternion tempRotn = Quaternion.LookRotation(tempCamDirec, Vector3.up);
+    // OSPerson.transform.rotation = tempRotn;
 
     // Udp connection to get GeoLocation 
     if (client2.Available > 0)
